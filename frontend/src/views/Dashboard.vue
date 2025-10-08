@@ -1,0 +1,329 @@
+<template>
+  <ion-page>
+    <ion-header>
+      <ion-toolbar>
+        <div style="display: flex; justify-content: space-between; align-items: center; width: 100%;">
+          <div class="admin-logo">
+            <img src="../../public/img/cpclogo.jpg" alt="CPC Logo" />
+          </div>
+        </div>
+      </ion-toolbar>
+    </ion-header>
+
+    <ion-content class="ad-background">
+      <div class="content-wrapper">
+            <div class="sidebar">
+            <router-link to="/dashboard" class="sidebar-title">Dashboard</router-link>
+                <ul>
+                    <li>
+                        <div class="sidebar-link" @click="toggleStudentMenu">
+                        Student Management
+                        </div>
+                        <ul v-show="showStudentMenu">
+                            <li><router-link to="/register" class="sub">Register Student</router-link></li>
+                            <li><router-link to="/view" class="sub">View & Manage Students</router-link></li>
+                            <li><router-link to="/recovery" class="sub">Manage 2FA/Recovery</router-link></li>
+                            <li><router-link to="/facereset" class="sub">Reset Facial Verification</router-link></li>
+                        </ul>
+                    </li>
+                    <li>
+                        <div class="sidebar-link" @click="toggleAcadMenu">
+                        Academic Curriculum
+                        </div>
+                        <ul v-show="showAcadMenu">
+                            <li><router-link to="/register-course" class="sub">Register Course</router-link></li>
+                            <li><router-link to="/view-course" class="sub">View Courses</router-link></li>
+                            <li><router-link to="/add-year" class="sub">Add Year Level</router-link></li>
+                            <li><router-link to="/view-year" class="sub">View Year Level</router-link></li>
+                            <li><router-link to="/add-sec" class="sub">Add Section</router-link></li>
+                            <li><router-link to="/view-sec" class="sub">View Section</router-link></li>
+                        </ul>
+                    </li>
+                    <li>
+                        <div class="sidebar-link" @click="toggleEventMenu">
+                        Event Management
+                        </div>
+                        <ul v-show="showEventMenu">
+                            <li><router-link to="/create" class="sub">Create Event</router-link></li>
+                            <li><router-link to="/event-lists" class="sub">Event List</router-link></li>
+                            <li><router-link to="/attendance-page" class="sub">Attendance Page Control</router-link></li>
+                            <li><router-link to="/attendance-records" class="sub">View Attendance Records</router-link></li>
+                        </ul>
+                    </li>
+                    <li>
+                        <router-link to="/Request" class="sidebar-link">Request Management</router-link>
+                    </li>
+                    <li>
+                        <router-link to="/Notif" class="sidebar-link">Notification Management</router-link>
+                    </li>
+                    <li>
+                        <router-link to="/Feed" class="sidebar-link">Feedback Management</router-link>
+                    </li>
+                    <li>
+                        <router-link to="/Update" class="sidebar-link">Featured Updates</router-link>
+                    </li>
+                    <li>
+                      <router-link to="/account-center" class="sidebar-link">Account Center</router-link>
+                    </li>
+                    <li>
+                        <router-link to="/adminLogIn" class="sidebar-link" @click="confirmLogout">
+                        Log Out
+                    </router-link>
+                    </li>
+                </ul>
+            </div>
+        <div class="main-content">
+            <div class="dashboard-cards">
+                <div class="dashcard">
+                    <div class="dashcard-title">Total Students</div>
+                    <div class="dashcard-number">2567</div>
+                </div>
+                <div class="dashcard">
+                    <div class="dashcard-title">Total Courses</div>
+                    <div class="dashcard-number">4</div>
+                </div>
+                <div class="dashcard date-time">
+                    <div class="dashcard-title">Date & Time</div>
+                    <div class="dashcard-time">{{ currentTime }}</div>
+                    <div class="dashcard-date">{{ currentDate }}</div>
+                </div>
+            </div>
+        </div>
+      </div>
+    </ion-content>
+    <div class="footer">
+      <ion-text>
+        <small>&copy; All Rights Reserved PPG 2025.</small>
+      </ion-text>
+    </div>
+  </ion-page>
+</template>
+
+<script setup lang="ts">
+import {
+  IonButton,
+  IonContent,
+  IonHeader,
+  IonIcon,
+  IonPage,
+  IonText,
+  IonToolbar
+} from '@ionic/vue';
+import { notifications } from 'ionicons/icons';
+import Swal from 'sweetalert2';
+import { onMounted, ref } from 'vue';
+import { useRouter } from 'vue-router';
+
+const router = useRouter();
+
+const confirmLogout = async () => {
+  const result = await Swal.fire({
+    title: 'Are you sure?',
+    text: 'You will be logged out and redirected to the login page.',
+    icon: 'warning',
+    showCancelButton: true,
+    confirmButtonColor: '#3085d6',
+    cancelButtonColor: '#d33',
+    confirmButtonText: 'Yes, log me out!', 
+    didOpen: () => {
+          document.body.classList.remove("swal2-height-auto");
+          document.documentElement.classList.remove("swal2-height-auto");
+        }
+  });
+
+  if (result.isConfirmed) {
+    router.push('/login');
+  }
+};
+
+const showStudentMenu = ref(false);
+const showAcadMenu = ref(false);
+const showEventMenu = ref(false);
+
+const toggleStudentMenu = () => showStudentMenu.value = !showStudentMenu.value;
+const toggleAcadMenu = () => showAcadMenu.value = !showAcadMenu.value;
+const toggleEventMenu = () => showEventMenu.value = !showEventMenu.value;
+
+const currentTime = ref('');
+const currentDate = ref('');
+
+const updateDateTime = () => {
+  const now = new Date();
+
+  const days = ['SUN', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT'];
+  const months = [
+    'JANUARY', 'FEBRUARY', 'MARCH', 'APRIL', 'MAY', 'JUNE',
+    'JULY', 'AUGUST', 'SEPTEMBER', 'OCTOBER', 'NOVEMBER', 'DECEMBER'
+  ];
+
+  const day = days[now.getDay()];
+  const hours = now.getHours();
+  const minutes = now.getMinutes();
+  const seconds = now.getSeconds();
+  const ampm = hours >= 12 ? 'PM' : 'AM';
+
+  const formattedHours = ((hours + 11) % 12 + 1).toString().padStart(2, '0');
+  const formattedMinutes = minutes.toString().padStart(2, '0');
+  const formattedSeconds = seconds.toString().padStart(2, '0');
+
+  currentTime.value = `${day}, ${formattedHours}:${formattedMinutes}:${formattedSeconds} ${ampm}`;
+
+  const date = now.getDate();
+  const month = months[now.getMonth()];
+  const year = now.getFullYear();
+
+  currentDate.value = `${month} ${date}, ${year}`;
+};
+
+onMounted(() => {
+  updateDateTime();
+  setInterval(updateDateTime, 1000);
+});
+
+</script>
+
+<style scoped>
+.toolbar-container::part(backdrop) {
+  background-color: #07055D !important;
+}
+
+.ad-background {
+  --background: url('../../public/img/admin-bg.png');
+  background-size: cover;
+  background-repeat: no-repeat;
+  background-position: center;
+}
+.content-wrapper {
+  display: flex;
+  min-height: 100%;
+}
+.sidebar-link {
+  display: block;
+  font-size: 22px;
+  padding: 5px 10px;
+  color: white;
+  text-decoration: none;
+  font-weight: bold;
+  border-radius: 4px;
+  transition: background-color 0.3s;
+}
+
+.sidebar-link:hover {
+  background-color: #2c2c7a; 
+  color: #FFFF00; 
+}
+
+.sidebar-title {
+    font-size: 40px;
+    text-transform: uppercase;
+    letter-spacing: 5px;
+    display: block;
+    padding: 3px 10px;
+    color: white;
+    text-decoration: none;
+    font-weight: bold;
+    border-radius: 4px;
+    transition: background-color 0.3s;
+}
+.sidebar-title:hover{
+  color: #FFFF00; 
+}
+.sub:hover{
+    background-color: #2c2c7a; 
+    color: #FFFF00; 
+}
+.sub{
+    display: block;
+    padding: 3px 10px;
+    color: white;
+    text-decoration: none;
+    border-radius: 4px;
+    transition: background-color 0.3s;
+    font-size: 18px;
+    margin-left: 20px;
+    font-weight: normal !important;
+}
+
+.sidebar {
+    width: 360px;
+    background-color: rgba(7, 5, 93, 0.9);
+    color: white;
+    padding: 15px;
+    margin: 10px 0;
+}
+.sidebar ul {
+  list-style-type: none;
+  padding: 0;
+}
+.sidebar ul li {
+  margin: 8px 0;
+}
+.sidebar ul li a {
+  color: white;
+  text-decoration: none;
+  font-weight: bold;
+}
+
+.main-content {
+  flex: 1;
+  padding: 15px;
+}
+.dashcard {
+    border-radius: 8px;
+    display: inline-block;
+    margin-left: 5px;
+    overflow: hidden;
+    width: 280px;
+    color: white;
+    text-align: center;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+}
+
+.dashcard-title {
+    background-color: rgba(7, 5, 93, 0.9);
+    padding: 15px 0;
+    font-weight: bold;
+    font-size: 25px;
+    text-transform: uppercase;
+}
+.dashcard-number,
+.dashcard-time,
+.dashcard-date {
+  background-color: rgba(255, 255, 255, 0.15);
+  padding: 10px 0;
+  font-weight: bold;
+}
+.dashcard-number{
+    font-size: 50px;
+}
+
+.date-time .dashcard-time {
+  font-size: 20px;
+  padding: 7px 0;
+}
+.date-time .dashcard-date {
+  font-size: 20px;
+  padding: 10px 0;
+}
+
+.admin-logo {
+  display: flex;
+  height: 75px;
+  margin-left: 10px;
+  padding: 3px;
+}
+.toolbar-icons {
+  display: flex;
+  align-items: center;
+}
+ion-icon {
+    font-size: 35px !important;
+    color: #fff !important;
+    margin-right: 30px;
+}
+.footer {
+  margin-top: auto;
+  text-align: center;
+  color: white;
+}
+</style>
