@@ -22,6 +22,9 @@ const AbsenceRequest  = require('./routes/absenceRoutes');
 const faceRoutes = require('./routes/faceRoutes');
 const attendanceRoutes = require('./routes/attendanceRoutes');
 const notificationRoutes = require('./routes/notificationRoutes');
+const feedbackRoutes = require('./routes/feedbackRoutes');
+const updatesRoutes = require('./routes/updates');
+const userRoutes = require('./routes/userRoutes');
 const app = express();
 const PORT = process.env.PORT || 5000;
 
@@ -61,6 +64,16 @@ app.use('/api/attendance', attendanceRoutes);
 app.use('/api/admin', adminRoutes);
 app.use("/api/twofa", twofaRoutes);
 app.use('/api/notifications', notificationRoutes);
+app.use('/api/feedback', feedbackRoutes);
+app.use('/api/updates', updatesRoutes);
+app.use('/api/users', userRoutes);
+app.get('/api/check-admin-session', (req, res) => {
+  if (req.session.admin) {
+    res.json({ loggedIn: true, admin: req.session.admin });
+  } else {
+    res.json({ loggedIn: false });
+  }
+});
 
 // ✅ Session check route
 app.get('/api/protected', (req, res) => {

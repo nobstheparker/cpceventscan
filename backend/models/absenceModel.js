@@ -2,32 +2,24 @@ const db = require('../config/db');
 
 const createAbsenceRequest = async ({
   event_id,
-  studentId,
-  full_name,
-  department,
-  year_section,
+  student_id,
   reason,
   documentation,
-  submission_date,
   parent_name,
   contact_info,
   agreement
 }) => {
   const sql = `
     INSERT INTO absence_requests
-      (id, student_id, full_name, department, year_section, reason, documentation, submission_date, parent_name, contact_info, agreement, created_at)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())
+      (id, student_id, reason, documentation, submission_date, parent_name, contact_info, agreement, created_at)
+    VALUES (?, ?, ?, ?, NOW(), ?, ?, ?, NOW())
   `;
 
   const [result] = await db.query(sql, [
     event_id,
-    studentId,
-    full_name,
-    department,
-    year_section,
+    student_id,
     reason,
     documentation,
-    submission_date,
     parent_name,
     contact_info,
     agreement ? 1 : 0
@@ -35,6 +27,7 @@ const createAbsenceRequest = async ({
 
   return result;
 };
+
 const Absence = {
   async getAbsencesByStudent(studentId) {
     const query = `

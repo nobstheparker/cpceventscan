@@ -51,7 +51,11 @@
             <li><router-link to="/Feed" class="sidebar-link">Feedback Management</router-link></li>
             <li><router-link to="/Update" class="sidebar-link">Featured Updates</router-link></li>
             <li><router-link to="/account-center" class="sidebar-link">Account Center</router-link></li>
-            <li><router-link to="/adminLogIn" class="sidebar-link" @click="confirmLogout">Log Out</router-link></li>
+             <li>
+                <a href="javascript:void(0);" class="sidebar-link" @click="confirmLogout">
+                    Log Out
+                </a>
+            </li>
           </ul>
         </div>
 
@@ -86,7 +90,11 @@
             <ion-col size="7">
             </ion-col>
             <ion-col size="5">
-              <ion-searchbar v-model="absenceSearch" placeholder="Search Absence Requests"></ion-searchbar>
+              <ion-searchbar
+                :value="absenceSearch"
+                @ionInput="onAbsenceSearch($event.detail.value)"
+                placeholder="Search Absence Requests">
+              </ion-searchbar>
             </ion-col>
           </ion-row>
 
@@ -110,7 +118,7 @@
                   <td>{{ formatDate(req.reqDate) }}</td>
                   <td>{{ req.reqstats }}</td>
                   <td>
-                    <ion-button size="small" style="--background:#4CAF50;--color:white;" @click="openAbsenceModal(req)">View Details</ion-button>
+                    <ion-button size="small" style="--background:#e2cb0c;--color:black; font-weight: 600; margin: 0 auto !important; display: flex;" @click="openAbsenceModal(req)">View Details</ion-button>
                   </td>
                 </tr>
               </tbody>
@@ -129,7 +137,11 @@
           <ion-row class="ion-align-items-center ion-justify-content-between" style="margin-bottom: 10px;">
             <ion-col size="7"></ion-col>
             <ion-col size="5">
-              <ion-searchbar v-model="volunteerSearch" placeholder="Search Volunteer Applications"></ion-searchbar>
+              <ion-searchbar
+                :value="volunteerSearch"
+                @ionInput="onVolunteerSearch($event.detail.value)"
+                placeholder="Search Volunteer Applications">
+              </ion-searchbar>
             </ion-col>
           </ion-row>
 
@@ -153,7 +165,7 @@
                   <td>{{ formatDate(req.reqDate) }}</td>
                   <td>{{ req.reqstats }}</td>
                   <td>
-                    <ion-button size="small" style="--background:#4CAF50;--color:white;" @click="openVolunteerModal(req)">View Details</ion-button>
+                    <ion-button size="small" style="--background:#e2cb0c;--color:black; font-weight: 600; margin: 0 auto !important; display: flex;" @click="openVolunteerModal(req)">View Details</ion-button>
                   </td>
                 </tr>
               </tbody>
@@ -217,7 +229,7 @@
         <ion-toolbar>
           <ion-title style="margin-left: 10px;">Volunteer Details</ion-title>
           <ion-buttons slot="end">
-            <ion-button fill="clear" color="light" @click="showAbsenceModal = false" class="close-btn" >
+            <ion-button fill="clear" color="light" @click="showVolunteerModal = false" class="close-btn" >
               <ion-icon name="close"></ion-icon>
             </ion-button>
           </ion-buttons>
@@ -251,6 +263,16 @@
 </template>
 
 <script setup lang="ts">
+import {
+  IonButton,
+  IonContent,
+  IonHeader,
+  IonIcon,
+  IonPage,
+  IonText,
+  IonToolbar,
+  IonSearchbar
+} from '@ionic/vue';
 import { ref, computed, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
 import axios from 'axios';
@@ -275,15 +297,30 @@ const confirmLogout = async () => {
     text: 'You will be logged out.',
     icon: 'warning',
     showCancelButton: true,
-    confirmButtonColor: '#3085d6',
-    cancelButtonColor: '#d33',
     confirmButtonText: 'Yes, log me out!',
     didOpen: () => {
       document.body.classList.remove('swal2-height-auto');
       document.documentElement.classList.remove('swal2-height-auto');
-    }
+    },
   });
-  if (result.isConfirmed) router.push('/login');
+
+  if (result.isConfirmed) {
+    try {
+      await axios.post('http://localhost:5000/api/users/admin-logout', {}, { withCredentials: true });
+      router.push('/adminLogIn'); // redirect to login page
+    } catch (err) {
+      console.error(err);
+      Swal.fire({
+        icon: 'error',
+        title: 'Error',
+        text: 'Logout failed',
+        didOpen: () => {
+          document.body.classList.remove('swal2-height-auto');
+          document.documentElement.classList.remove('swal2-height-auto');
+        }
+      });
+    }
+  }
 };
 
 // ------------------------
@@ -395,50 +432,100 @@ function getSortIcon(column: string, table: 'absence' | 'volunteer') {
 // Computed filters
 // ------------------------
 const filteredAbsenceRequests = computed(() => {
-  let data = requests.value.filter((r) => r.reqType === 'Absence');
-  if (absenceSearch.value)
+  let data = requests.value.filter((r) =>
+    r.reqType.toLowerCase().includes("absence")
+  );
+
+  if (absenceSearch.value.trim()) {
+    const keyword = absenceSearch.value.toLowerCase();
     data = data.filter((r) =>
-      Object.values(r).some((v) => String(v).toLowerCase().includes(absenceSearch.value.toLowerCase()))
+      [
+        r.first_name,
+        r.middle_name,
+        r.studNameName,
+        r.eprogYearSec,
+        r.reqType,
+        r.reqstats,
+      ]
+        .filter(Boolean)
+        .some((val) => val.toLowerCase().includes(keyword))
     );
-  if (absenceSortFilter.value) data = data.filter((r) => r.reqstats === absenceSortFilter.value);
+  }
+
+  if (absenceSortFilter.value)
+    data = data.filter((r) => r.reqstats === absenceSortFilter.value);
+
   if (sortColumn.value.absence)
     data.sort((a, b) => {
-      let aVal: any = a[sortColumn.value.absence as keyof typeof a];
-      let bVal: any = b[sortColumn.value.absence as keyof typeof b];
-      if (sortColumn.value.absence === 'reqstats') {
+      let aVal = a[sortColumn.value.absence];
+      let bVal = b[sortColumn.value.absence];
+      if (sortColumn.value.absence === "reqstats") {
         aVal = statusOrder.indexOf(aVal);
         bVal = statusOrder.indexOf(bVal);
       } else {
-        aVal = String(aVal).toLowerCase();
-        bVal = String(bVal).toLowerCase();
+        aVal = String(aVal || "").toLowerCase();
+        bVal = String(bVal || "").toLowerCase();
       }
-      return aVal < bVal ? (sortOrder.value.absence === 'asc' ? -1 : 1) : aVal > bVal ? (sortOrder.value.absence === 'asc' ? 1 : -1) : 0;
+      return sortOrder.value.absence === "asc"
+        ? aVal.localeCompare(bVal)
+        : bVal.localeCompare(aVal);
     });
+
   return data;
 });
 
 const filteredVolunteerRequests = computed(() => {
-  let data = requests.value.filter((r) => r.reqType === 'Volunteer');
-  if (volunteerSearch.value)
+  let data = requests.value.filter((r) =>
+    r.reqType.toLowerCase().includes("volunteer")
+  );
+
+  if (volunteerSearch.value.trim()) {
+    const keyword = volunteerSearch.value.toLowerCase();
     data = data.filter((r) =>
-      Object.values(r).some((v) => String(v).toLowerCase().includes(volunteerSearch.value.toLowerCase()))
+      [
+        r.first_name,
+        r.middle_name,
+        r.studNameName,
+        r.eprogYearSec,
+        r.reqType,
+        r.reqstats,
+      ]
+        .filter(Boolean)
+        .some((val) => val.toLowerCase().includes(keyword))
     );
-  if (volunteerSortFilter.value) data = data.filter((r) => r.reqstats === volunteerSortFilter.value);
+  }
+
+  if (volunteerSortFilter.value)
+    data = data.filter((r) => r.reqstats === volunteerSortFilter.value);
+
   if (sortColumn.value.volunteer)
     data.sort((a, b) => {
-      let aVal: any = a[sortColumn.value.volunteer as keyof typeof a];
-      let bVal: any = b[sortColumn.value.volunteer as keyof typeof b];
-      if (sortColumn.value.volunteer === 'reqstats') {
+      let aVal = a[sortColumn.value.volunteer];
+      let bVal = b[sortColumn.value.volunteer];
+      if (sortColumn.value.volunteer === "reqstats") {
         aVal = statusOrder.indexOf(aVal);
         bVal = statusOrder.indexOf(bVal);
       } else {
-        aVal = String(aVal).toLowerCase();
-        bVal = String(bVal).toLowerCase();
+        aVal = String(aVal || "").toLowerCase();
+        bVal = String(bVal || "").toLowerCase();
       }
-      return aVal < bVal ? (sortOrder.value.volunteer === 'asc' ? -1 : 1) : aVal > bVal ? (sortOrder.value.volunteer === 'asc' ? 1 : -1) : 0;
+      return sortOrder.value.volunteer === "asc"
+        ? aVal.localeCompare(bVal)
+        : bVal.localeCompare(aVal);
     });
+
   return data;
 });
+
+const onAbsenceSearch = (value?: string): void => {
+  absenceSearch.value = value ?? '';
+  currentPage.value.absence = 1; // reset to first page on new search
+};
+
+const onVolunteerSearch = (value?: string): void => {
+  volunteerSearch.value = value ?? '';
+  currentPage.value.volunteer = 1; // reset to first page on new search
+};
 
 // ------------------------
 // Pagination

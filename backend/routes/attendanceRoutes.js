@@ -14,5 +14,9 @@ router.get('/details/:event_id', attendanceController.getEventDetails);
 router.put('/settle/:attendance_id', attendanceController.settleAttendance);
 router.get('/controls', attendanceController.getAttendanceControls);
 router.put('/controls/:eventID', attendanceController.updateControls);
+router.get('/controls/:eventID', attendanceController.getAttendanceControlsbyevent);
+router.put('/:event_id/afternoon-timein', attendanceController.afternoonTimeIn);
+router.put('/:event_id/afternoon-trivia', attendanceController.afternoonTrivia);
+router.put('/:event_id/afternoon-timeout', attendanceController.afternoonTimeOut);
 
 module.exports = router;

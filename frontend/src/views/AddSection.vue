@@ -65,11 +65,11 @@
                 <li>
                     <router-link to="/account-center" class="sidebar-link">Account Center</router-link>
                 </li>
-                <li>
-                    <router-link to="/adminLogIn" class="sidebar-link" @click="confirmLogout">
-                    Log Out
-                </router-link>
-                </li>
+                 <li>
+                    <a href="javascript:void(0);" class="sidebar-link" @click="confirmLogout">
+                      Log Out
+                    </a>
+                  </li>
             </ul>
         </div>
         <div class="main-content">
@@ -219,6 +219,38 @@ const handleRegister = async () => {
     });
   }
 };
+
+ const confirmLogout = async () => {
+    const result = await Swal.fire({
+      title: 'Are you sure?',
+      text: 'You will be logged out.',
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonText: 'Yes, log me out!',
+      didOpen: () => {
+        document.body.classList.remove('swal2-height-auto');
+        document.documentElement.classList.remove('swal2-height-auto');
+      },
+    });
+
+    if (result.isConfirmed) {
+      try {
+        await axios.post('http://localhost:5000/api/users/admin-logout', {}, { withCredentials: true });
+        router.push('/adminLogIn'); // redirect to login page
+      } catch (err) {
+        console.error(err);
+        Swal.fire({
+          icon: 'error',
+          title: 'Error',
+          text: 'Logout failed',
+          didOpen: () => {
+            document.body.classList.remove('swal2-height-auto');
+            document.documentElement.classList.remove('swal2-height-auto');
+          }
+        });
+      }
+    }
+  };
 
 onMounted(() => {
   fetchCourses();

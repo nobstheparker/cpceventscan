@@ -195,6 +195,52 @@ exports.getAttendanceControls = async (req, res) => {
   }
 };
 
+exports.getAttendanceControlsbyevent = async (req, res) => {
+  try {
+    const { eventID } = req.params;
+
+    if (!eventID) {
+      return res.status(400).json({ error: 'Missing event_id parameter' });
+    }
+
+    const [records] = await attendanceModel.getAttendanceControlsByEvent(eventID);
+
+    if (!records.length) {
+      return res.status(404).json({ message: 'No attendance controls found for this event' });
+    }
+
+    const controls = records.map(r => ({
+      controlID: r.controlID,
+      eventID: r.event_id,
+      eventName: r.eventName,
+      eventDate: r.eventDate,
+      enabledControl: [
+        r.morning_time_in ? 'Morning Time In' : null,
+        r.morning_mid_event ? 'Morning Mid Event' : null,
+        r.morning_time_out ? 'Morning Time Out' : null,
+        r.afternoon_time_in ? 'Afternoon Time In' : null,
+        r.afternoon_mid_event ? 'Afternoon Mid Event' : null,
+        r.afternoon_time_out ? 'Afternoon Time Out' : null,
+        r.feedback_form ? 'Feedback Form' : null
+      ].filter(Boolean).join(', '),
+      settings: {
+        morning_time_in: r.morning_time_in,
+        morning_mid_event: r.morning_mid_event,
+        morning_time_out: r.morning_time_out,
+        afternoon_time_in: r.afternoon_time_in,
+        afternoon_mid_event: r.afternoon_mid_event,
+        afternoon_time_out: r.afternoon_time_out,
+        feedback_form: r.feedback_form
+      }
+    }));
+
+    res.json({ attendanceControls: controls });
+  } catch (err) {
+    console.error('Error fetching attendance controls:', err);
+    res.status(500).json({ error: err.message });
+  }
+};
+
 exports.updateControls = async (req, res) => {
   try {
     const { eventID } = req.params;
@@ -209,5 +255,58 @@ exports.updateControls = async (req, res) => {
   } catch (err) {
     console.error(err);
     res.status(500).json({ message: 'Server error' });
+  }
+};
+// ✅ Afternoon time in
+exports.afternoonTimeIn = async (req, res) => {
+  try {
+    const { event_id } = req.params;
+    const { studentId } = req.body;
+
+    const [records] = await attendanceModel.getByEvent(event_id, studentId);
+    if (records.length === 0) return res.status(404).json({ error: 'Attendance not found' });
+
+    const attendanceId = records[0].attendance_id;
+    await attendanceModel.updateAfternoonTimeIn(attendanceId);
+    res.json({ message: 'Afternoon time in updated' });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: err.message });
+  }
+};
+
+// ✅ Afternoon trivia time in
+exports.afternoonTrivia = async (req, res) => {
+  try {
+    const { event_id } = req.params;
+    const { studentId } = req.body;
+
+    const [records] = await attendanceModel.getByEvent(event_id, studentId);
+    if (records.length === 0) return res.status(404).json({ error: 'Attendance not found' });
+
+    const attendanceId = records[0].attendance_id;
+    await attendanceModel.updateAfternoonTriviaTimeIn(attendanceId);
+    res.json({ message: 'Afternoon trivia time in updated' });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: err.message });
+  }
+};
+
+// ✅ Afternoon time out
+exports.afternoonTimeOut = async (req, res) => {
+  try {
+    const { event_id } = req.params;
+    const { studentId } = req.body;
+
+    const [records] = await attendanceModel.getByEvent(event_id, studentId);
+    if (records.length === 0) return res.status(404).json({ error: 'Attendance not found' });
+
+    const attendanceId = records[0].attendance_id;
+    await attendanceModel.updateAfternoonTimeOut(attendanceId);
+    res.json({ message: 'Afternoon time out updated' });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: err.message });
   }
 };

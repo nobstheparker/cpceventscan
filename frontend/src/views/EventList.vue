@@ -65,10 +65,10 @@
             <li>
               <router-link to="/account-center" class="sidebar-link">Account Center</router-link>
             </li>
-            <li>
-              <router-link to="/adminLogIn" class="sidebar-link" @click="confirmLogout">
-                Log Out
-              </router-link>
+             <li>
+                <a href="javascript:void(0);" class="sidebar-link" @click="confirmLogout">
+                    Log Out
+                </a>
             </li>
           </ul>
         </div>
@@ -162,7 +162,15 @@
                       >
                         Delete
                       </ion-button>
-                      <ion-button size="small" fill="solid" style="--background:#30e707;--color: black; --border-radius: 3px; font-weight: 600; width: 205px;" expand="block">Download QR</ion-button>
+                      <ion-button
+                        size="small"
+                        fill="solid"
+                        style="--background:#30e707;--color:black;--border-radius:3px;font-weight:600;width:205px;"
+                        expand="block"
+                        @click="downloadQR(event.qrCodeImage, event.eventID)"
+                      >
+                        Download QR
+                      </ion-button>
                     </td>
                   </tr>
                 </tbody>
@@ -203,7 +211,7 @@
             <div class="form-wrapper">
               <ion-card>
                 <ion-card-header>
-                  <ion-card-title class="reg-title">Edit Event</ion-card-title>
+                  <ion-card-title style="    --color: white; font-weight: 700; text-align: center;" class="reg-title">Edit Event</ion-card-title>
                   <button type="button" class="btn-close" @click="closeModal" aria-label="Close"></button>
                 </ion-card-header>
 
@@ -388,27 +396,6 @@
                     </div>
                   </div>
                 </div>
-                <div class="form-row-con">
-                  <label>Additional Settings</label>
-
-                  <div style="display: flex; align-items: center; gap: 30px; margin-top: 10px; color: rgb(31, 30, 35); font-weight: 500; margin-bottom: 15px;">
-                    <div style="display: flex; align-items: center;">
-                      <ion-checkbox v-model="modalEvent.attendanceControls"></ion-checkbox>
-                      <ion-label style="margin-left: 6px;">Attendance Controls</ion-label>
-                    </div>
-
-                    <div style="display: flex; align-items: center;">
-                      <ion-checkbox v-model="modalEvent.customNotification"></ion-checkbox>
-                      <ion-label style="margin-left: 6px;">Custom Notification</ion-label>
-                    </div>
-
-                    <div style="display: flex; align-items: center;">
-                      <ion-checkbox v-model="modalEvent.midEventCheck"></ion-checkbox>
-                      <ion-label style="margin-left: 6px;">Mid-Event Check</ion-label>
-                    </div>
-                  </div>
-                </div>
-
 
                   <!-- QR Code Option -->
                   <div class="form-row-con">
@@ -703,20 +690,59 @@ const updateEvent = async () => {
     Swal.fire('Error', 'Failed to update the event.', 'error');
   }
 };
+const downloadQR = async (qrCodeUrl: string, eventID: number) => {
+  try {
+    const response = await fetch(qrCodeUrl);
+    if (!response.ok) throw new Error('Network response was not ok');
+
+    const blob = await response.blob();
+    const url = URL.createObjectURL(blob);
+
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `event-${eventID}-QR.png`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+
+    URL.revokeObjectURL(url);
+  } catch (error) {
+    console.error('QR download failed:', error);
+    Swal.fire('Error', 'Failed to download QR code.', 'error');
+  }
+};
+
+
 
 const confirmLogout = async () => {
   const result = await Swal.fire({
     title: 'Are you sure?',
-    text: 'You will be logged out and redirected to the login page.',
+    text: 'You will be logged out.',
     icon: 'warning',
     showCancelButton: true,
-    confirmButtonColor: '#3085d6',
-    cancelButtonColor: '#d33',
     confirmButtonText: 'Yes, log me out!',
+    didOpen: () => {
+      document.body.classList.remove('swal2-height-auto');
+      document.documentElement.classList.remove('swal2-height-auto');
+    },
   });
 
   if (result.isConfirmed) {
-    router.push('/login');
+    try {
+      await axios.post('http://localhost:5000/api/users/admin-logout', {}, { withCredentials: true });
+      router.push('/adminLogIn'); // redirect to login page
+    } catch (err) {
+      console.error(err);
+      Swal.fire({
+        icon: 'error',
+        title: 'Error',
+        text: 'Logout failed',
+        didOpen: () => {
+          document.body.classList.remove('swal2-height-auto');
+          document.documentElement.classList.remove('swal2-height-auto');
+        }
+      });
+    }
   }
 };
 
@@ -752,7 +778,6 @@ const fetchEvents = async () => {
       eventDesc: event.event_description,
       startDateTime: event.start_date_time,
       endDateTime: event.end_date_time,
-      searchQuery: event.event_location,
       selectionMode: event.selection_mode,
       selectedCourse: event.selected_course,
       selectedStudents: event.selected_students ? JSON.parse(event.selected_students) : [],
@@ -766,12 +791,14 @@ const fetchEvents = async () => {
       attendanceControls: event.attendance_controls === 1,
       customNotification: event.custom_notification === 1,
       midEventCheck: event.mid_event_check === 1,
+      qrCodeImage: `http://localhost:5000/uploads/qr/event-${event.id}.png`,
       eventProgramBase64: '',
     }));
   } catch (error) {
     console.error('Failed to fetch events:', error);
   }
 };
+
 
 const determineEventStatus = (startDate: string, endDate: string) => {
   const now = new Date();

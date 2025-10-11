@@ -52,8 +52,11 @@
             <li><router-link to="/Feed" class="sidebar-link">Feedback Management</router-link></li>
             <li><router-link to="/Update" class="sidebar-link">Featured Updates</router-link></li>
             <li><router-link to="/account-center" class="sidebar-link">Account Center</router-link></li>
-            <li><router-link to="/adminLogIn" class="sidebar-link" @click.prevent="confirmLogout">Log Out</router-link></li>
-          </ul>
+            <li>
+              <a href="javascript:void(0);" class="sidebar-link" @click="confirmLogout">
+                  Log Out
+              </a>
+            </li>          </ul>
         </div>
 
         <!-- Main Content -->
@@ -94,19 +97,9 @@
           <h4>Attendance Details</h4>
 
           <ion-row class="ion-align-items-center ion-justify-content-between" style="margin-bottom: 10px;">
-            <ion-col size="4">
-              <select v-model="sortColumn" style="padding: 6px 10px; border: 1px solid #ccc; border-radius: 4px;">
-                <option disabled value="">Sort By</option>
-                <option value="progYearSec">Prog,Yr & Sec</option>
-                <option value="timeIn">Time In</option>
-                <option value="midEventcheck">Mid Event Check</option>
-                <option value="timeOut">Time Out</option>
-                <option value="remarks">Remarks</option>
-                <option value="absenceReq">Absence Request</option>
-                <option value="attendanceStats">Attendance Status</option>
-              </select>
+            <ion-col size="7">
             </ion-col>
-            <ion-col size="8">
+            <ion-col size="5">
               <ion-searchbar v-model="searchQuery" class="white-searchbar" placeholder="Search..." animated />
             </ion-col>
           </ion-row>
@@ -117,11 +110,16 @@
                 <tr>
                   <th>Name</th>
                   <th>Prog,Yr & Sec</th>
-                  <th>Time In</th>
-                  <th>Mid-Event Check</th>
-                  <th>Time Out</th>
+                  <th>Time In (AM)</th>
+                  <th class="break">Mid-Event Check (AM)</th>
+                  <th>Time Out (AM)</th>
+                  <th >Time In (PM)</th>
+                  <th class="break">Mid-Event Check (PM)</th>
+                  <th>Time Out (PM)</th>
+                  <th>VA</th>
+                  <th>AR</th>
                   <th>Remarks</th>
-                  <th>Attendance Status</th>
+                  <th >Attendance Status</th>
                   <th>Actions</th>
                 </tr>
               </thead>
@@ -132,6 +130,11 @@
                   <td>{{ detail.timeIn }}</td>
                   <td>{{ detail.midEventcheck }}</td>
                   <td>{{ detail.timeOut }}</td>
+                  <td>{{ detail.afternoontimeIn }}</td>
+                  <td>{{ detail.afternoonmidEventcheck }}</td>
+                  <td>{{ detail.afternoontimeOut }}</td>
+                  <td>{{ detail.afternoontimeOut }}</td>
+                  <td>{{ detail.afternoontimeOut }}</td>
                   <td>
                     <span :style="getRemarksStyle(detail.remarks)">{{ detail.remarks || '-' }}</span>
                   </td>
@@ -205,22 +208,36 @@ const toggleAcadMenu = () => (showAcadMenu.value = !showAcadMenu.value);
 const toggleEventMenu = () => (showEventMenu.value = !showEventMenu.value);
 
 /* Logout (keeps didOpen removal) */
-const confirmLogout = async () => {
+ const confirmLogout = async () => {
   const result = await Swal.fire({
     title: 'Are you sure?',
-    text: 'You will be logged out and redirected to the login page.',
+    text: 'You will be logged out.',
     icon: 'warning',
     showCancelButton: true,
-    confirmButtonColor: '#3085d6',
-    cancelButtonColor: '#d33',
     confirmButtonText: 'Yes, log me out!',
     didOpen: () => {
-      // preserve your didOpen adjustments (Ionic + SweetAlert2 height fix)
       document.body.classList.remove('swal2-height-auto');
       document.documentElement.classList.remove('swal2-height-auto');
-    }
+    },
   });
-  if (result.isConfirmed) router.push('/login');
+
+  if (result.isConfirmed) {
+    try {
+      await axios.post('http://localhost:5000/api/users/admin-logout', {}, { withCredentials: true });
+      router.push('/adminLogIn'); // redirect to login page
+    } catch (err) {
+      console.error(err);
+      Swal.fire({
+        icon: 'error',
+        title: 'Error',
+        text: 'Logout failed',
+        didOpen: () => {
+          document.body.classList.remove('swal2-height-auto');
+          document.documentElement.classList.remove('swal2-height-auto');
+        }
+      });
+    }
+  }
 };
 
 /* Generate Report */
@@ -266,6 +283,9 @@ interface AttendanceDetail {
   start_date_time?: string;
   end_date_time?: string;
   event_name?: string;
+  afternoontimeIn: string | null;
+  afternoonmidEventcheck: string | null;
+  afternoontimeOut: string | null;
 }
 
 const attendanceDetails = ref<AttendanceDetail[]>([]);
@@ -299,66 +319,46 @@ const fetchAttendanceDetails = async () => {
       console.error('No eventId param found in route.');
       return;
     }
+
     const res = await axios.get(`http://localhost:5000/api/attendance/details/${eventId}`);
-    // support both shapes: { attendanceDetails: [...] } or [...] 
-    const raw = res.data?.attendanceDetails ?? res.data ?? [];
-    const list = Array.isArray(raw) ? raw : raw.attendanceDetails ?? [];
+    const rawList = res.data?.attendanceDetails ?? [];
 
-    // Map & compute per-row overrides (Present / Missed / Complete)
-    const mapped: AttendanceDetail[] = list.map((d: any) => {
-      const timeInRaw = d.timeIn ?? d.time_in ?? d.time_in_formatted ?? null;
-      const midRaw = d.midEventcheck ?? d.trivia_time_in ?? d.triviaTimeIn ?? null;
-      const timeOutRaw = d.timeOut ?? d.time_out ?? d.time_out_formatted ?? null;
+    // Map API response to AttendanceDetail
+    attendanceDetails.value = rawList.map((d: any) => {
+      const timeIn = formatTimeSafe(d.timeIn);
+      const midEventcheck = formatTimeSafe(d.midEventcheck);
+      const timeOut = formatTimeSafe(d.timeOut);
+      const afternoontimeIn = formatTimeSafe(d.afternoontimeIn);
+      const afternoonmidEventcheck = formatTimeSafe(d.afternoonmidEventcheck);
+      const afternoontimeOut = formatTimeSafe(d.afternoontimeOut);
 
-      const timeIn = formatTimeSafe(timeInRaw);
-      const midEventcheck = formatTimeSafe(midRaw);
-      const timeOut = formatTimeSafe(timeOutRaw);
-
-      // detect event start/end (raw ISO preferred)
-      const startRaw = d.start_date_time ?? d.startDateTime ?? d.startDateTimeFormatted ?? d.startDateTime;
-      const endRaw = d.end_date_time ?? d.endDateTime ?? d.endDateTimeFormatted ?? d.endDateTime;
-
-      const startDate = parseDateSafe(startRaw);
-      const endDate = parseDateSafe(endRaw);
-
+      const startDate = parseDateSafe(d.startDateTime);
+      const endDate = parseDateSafe(d.endDateTime);
       const now = new Date();
       const eventEnded = endDate ? now > endDate : false;
 
-      // presence flags (non-empty)
-      const hasIn = !!(timeInRaw);
-      const hasMid = !!(midRaw);
-      const hasOut = !!(timeOutRaw);
+      let remarks = d.remarks || '';
+      let attendanceStats = d.attendanceStats || 'Unsettled';
 
-      // determine derived remarks / status (but don't override Excused)
-      let remarks = d.remarks ?? null;
-      let attendanceStats = (d.attendanceStats ?? d.attendance_stats ?? '').toString() || '';
+      // Compute derived remarks & status
+      const hasIn = !!timeIn;
+      const hasMid = !!midEventcheck;
+      const hasOut = !!timeOut;
 
-      // If all three present -> Present & Complete
       if (hasIn && hasMid && hasOut) {
         remarks = 'Present';
         attendanceStats = 'Complete';
-      } else {
-        // If event ended and all three are missing -> Missed
-        if (eventEnded && !hasIn && !hasMid && !hasOut) {
-          remarks = 'Missed';
-          // keep attendanceStats as 'Unsettled' unless server says Excused
-          if (!attendanceStats || attendanceStats.toLowerCase() === 'unsettled') {
-            attendanceStats = 'Unsettled';
-          }
-        } else {
-          // If server returned Excused, honor it
-          if ((d.status === 2) || (attendanceStats && attendanceStats.toLowerCase() === 'excused')) {
-            attendanceStats = 'Excused';
-            if (!remarks) remarks = d.remarks ?? 'Excused';
-          } else {
-            // Otherwise if some values missing -> unsettled (unless server set other)
-            if (!hasIn || !hasMid || !hasOut) {
-              if (!attendanceStats) attendanceStats = 'Unsettled';
-              // leave remarks as-is unless empty, then set 'Incomplete'
-              if (!remarks) remarks = 'Incomplete';
-            }
-          }
+      } else if (eventEnded && !hasIn && !hasMid && !hasOut) {
+        remarks = 'Missed';
+        if (!attendanceStats || attendanceStats.toLowerCase() === 'unsettled') {
+          attendanceStats = 'Unsettled';
         }
+      } else if (attendanceStats.toLowerCase() === 'excused') {
+        remarks = remarks || 'Excused';
+        attendanceStats = 'Excused';
+      } else if (!hasIn || !hasMid || !hasOut) {
+        attendanceStats = attendanceStats || 'Unsettled';
+        remarks = remarks || 'Incomplete';
       }
 
       return {
@@ -368,57 +368,38 @@ const fetchAttendanceDetails = async () => {
         timeIn,
         midEventcheck,
         timeOut,
-        absenceReq: d.absenceReq ?? d.absence_request ?? '',
+        afternoontimeIn,
+        afternoonmidEventcheck,
+        afternoontimeOut,
+        absenceReq: d.absenceReq ?? '',
         remarks,
         attendanceStats,
-        canSettle: Number(d.canSettle ?? d.can_settle ?? d.can_settle) === 1,
-        start_date_time: startRaw,
-        end_date_time: endRaw,
-        event_name: d.event_name ?? d.event_name
+        canSettle: Number(d.canSettle ?? 0) === 1,
+        start_date_time: d.startDateTime,
+        end_date_time: d.endDateTime,
+        event_name: d.event_name,
       } as AttendanceDetail;
     });
 
-    attendanceDetails.value = mapped;
-
-    // Summary values from mapped list
+    // Update summary
     if (attendanceDetails.value.length > 0) {
       const first = attendanceDetails.value[0];
       eventName.value = first.event_name ?? '';
-      // display a friendly date (use start_date_time raw if available)
-      const startRaw = first.start_date_time;
-      const parsedStart = parseDateSafe(startRaw);
-      eventDate.value = parsedStart
-        ? parsedStart.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })
-        : (startRaw ?? '');
-
-      // event status (Upcoming/Ongoing/Done) — try raw start/end datetimes
-      const parsedEnd = parseDateSafe(first.end_date_time);
-      const parsedStart2 = parseDateSafe(first.start_date_time);
+      eventDate.value = parseDateSafe(first.start_date_time)?.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' }) || '';
+      const start = parseDateSafe(first.start_date_time);
+      const end = parseDateSafe(first.end_date_time);
       const now = new Date();
-      if (parsedStart2 && parsedEnd) {
-        if (now < parsedStart2) eventStats.value = 'Upcoming';
-        else if (now >= parsedStart2 && now <= parsedEnd) eventStats.value = 'Ongoing';
-        else eventStats.value = 'Done';
+      if (start && end) {
+        eventStats.value = now < start ? 'Upcoming' : now <= end ? 'Ongoing' : 'Done';
       } else {
         eventStats.value = 'Unknown';
       }
 
-      // totals:
       totalAttendees.value = attendanceDetails.value.length;
-      totalAbsences.value = attendanceDetails.value.filter(r => (r.remarks && r.remarks.toLowerCase() === 'missed')).length;
-      // incomplete = some missing but not all missing (counted as 'Incomplete' / 'Unsettled' except Missed)
-      incompleteAttendance.value = attendanceDetails.value.filter(r => {
-        const hasIn = !!r.timeIn;
-        const hasMid = !!r.midEventcheck;
-        const hasOut = !!r.timeOut;
-        const allEmpty = !hasIn && !hasMid && !hasOut;
-        const someMissing = (hasIn && hasMid && !hasOut) || (hasIn && !hasMid && hasOut) || (!hasIn && hasMid && hasOut) || (hasIn && !hasMid && !hasOut) || (!hasIn && hasMid && !hasOut) || (!hasIn && !hasMid && hasOut);
-        return someMissing;
-      }).length;
-
-      feedbacks.value = 0; // adjust if you have feedback count in the response
+      totalAbsences.value = attendanceDetails.value.filter(r => r.remarks.toLowerCase() === 'missed').length;
+      incompleteAttendance.value = attendanceDetails.value.filter(r => r.remarks.toLowerCase() === 'incomplete').length;
+      feedbacks.value = 0;
     } else {
-      // reset summary if none
       eventName.value = '';
       eventDate.value = '';
       totalAttendees.value = 0;
@@ -431,6 +412,7 @@ const fetchAttendanceDetails = async () => {
     console.error('Error fetching attendance details:', err);
   }
 };
+
 
 onMounted(() => {
   fetchAttendanceDetails();
@@ -644,6 +626,13 @@ function getEventStyle(status: string | null) {
   color: #FFFF00; 
 }
 
+.break {
+  width: 100px;
+  display: block;
+  text-wrap: wrap;
+  text-align: center;
+}
+
 .sidebar {
   width: 360px;
   background-color: rgba(7, 5, 93, 0.9);
@@ -669,6 +658,7 @@ function getEventStyle(status: string | null) {
 
 .main-content {
   padding: 20px;
+  width: 100%;
 }
 
 .admin-logo {

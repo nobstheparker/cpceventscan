@@ -6,52 +6,46 @@ const { getAllAbsences } = require('../models/absenceModel');
 const db = require('../config/db'); // Adjust path if needed
 
 
+// controller
 const submitAbsenceRequest = async (req, res) => {
   try {
     const studentId = req.session?.student?.student_id;
-    if (!studentId) return res.status(401).json({ success: 0, message: 'Unauthorized: No student session found' });
+    if (!studentId) {
+      return res.status(401).json({ success: 0, message: 'Unauthorized: No student session found' });
+    }
 
     const {
       event_id,
-      full_name,
-      department,
-      year_section,
       reason,
-      submission_date,
       parent_name,
       contact_info,
       agreement
     } = req.body;
 
-    if (!event_id || !full_name || !department || !year_section || !reason ||
-        !submission_date || !parent_name || !contact_info || agreement === undefined) {
+    if (!event_id || !reason || !parent_name || !contact_info || agreement === undefined) {
       return res.status(400).json({ success: 0, message: 'Missing required fields' });
     }
 
     const documentation = req.file ? req.file.filename : null;
 
-    // Insert into absence_requests table
+    // ✅ Create absence request
     const result = await createAbsenceRequest({
       event_id,
-      studentId,
-      full_name,
-      department,
-      year_section,
+      student_id: studentId,
       reason,
       documentation,
-      submission_date,
       parent_name,
       contact_info,
       agreement
     });
 
-    // Insert into student_request
+    // ✅ Insert into student_request
     await insertStudentRequest({
       student_id: studentId,
       volunteered_id: null,
       absence_requests_id: result.insertId,
       date_requested: new Date(),
-      event_id: event_id
+      event_id
     });
 
     res.status(201).json({

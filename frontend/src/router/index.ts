@@ -252,7 +252,12 @@ const routes: Array<RouteRecordRaw> = [
     path: '/twofa',
     name:'Twofa',
     component: TwofaPage
-  }
+  },
+  {
+  path: '/attendance-logs',
+  name: 'AttendanceLogs',
+  component: () => import('@/views/AttendanceLogs.vue')
+}
 ]
 
 const router = createRouter({

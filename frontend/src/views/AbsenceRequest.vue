@@ -22,7 +22,7 @@
               INSTRUCTIONS:
               <small>Please fill out this form to request an absence for a school event.</small>
             </h2>
-            
+
             <!-- Event Name -->
             <ion-item>
               <ion-label position="stacked">Name of Event:</ion-label>
@@ -51,12 +51,6 @@
             <ion-text v-if="selectedFileName">
               <small>Selected: {{ selectedFileName }}</small>
             </ion-text>
-
-            <!-- Submission Date -->
-            <ion-item>
-              <ion-label position="stacked">Submission Date:</ion-label>
-              <ion-input type="date" v-model="submissionDate"></ion-input>
-            </ion-item>
 
             <!-- Parent/Guardian Name -->
             <ion-item>

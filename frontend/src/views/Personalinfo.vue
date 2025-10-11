@@ -2,11 +2,9 @@
   <ion-page>
     <ion-header>
       <ion-toolbar>
-        <ion-title>
           <div class="logo">
             <img src="../../public/img/cpclogo.jpg" alt="CPC Logo" />
           </div>
-        </ion-title>
       </ion-toolbar>
     </ion-header>
 

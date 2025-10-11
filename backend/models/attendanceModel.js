@@ -32,6 +32,31 @@ function updateTimeOut(attendance_id) {
   );
 }
 
+// Update afternoon time in
+function updateAfternoonTimeIn(attendance_id) {
+  return db.execute(
+    'UPDATE event_attendance SET afternoon_time_in = NOW() WHERE attendance_id = ?',
+    [attendance_id]
+  );
+}
+
+// Update afternoon trivia time in
+function updateAfternoonTriviaTimeIn(attendance_id) {
+  return db.execute(
+    'UPDATE event_attendance SET afternoon_trivia_time_in = NOW() WHERE attendance_id = ?',
+    [attendance_id]
+  );
+}
+
+// Update afternoon time out
+function updateAfternoonTimeOut(attendance_id) {
+  return db.execute(
+    'UPDATE event_attendance SET afternoon_time_out = NOW() WHERE attendance_id = ?',
+    [attendance_id]
+  );
+}
+
+
 // Get attendance by event and optional student
 function getByEvent(event_id, student_id = null) {
   let sql = 'SELECT * FROM event_attendance WHERE id = ?';
@@ -114,7 +139,9 @@ function getEventDetails(event_id) {
     DATE_FORMAT(ea.time_in, '%h:%i %p') AS timeIn,
     DATE_FORMAT(ea.trivia_time_in, '%h:%i %p') AS midEventcheck,
     DATE_FORMAT(ea.time_out, '%h:%i %p') AS timeOut,
-
+    DATE_FORMAT(ea.afternoon_time_in, '%h:%i %p') AS afternoontimeIn,
+    DATE_FORMAT(ea.afternoon_trivia_time_in, '%h:%i %p') AS afternoonmidEventcheck,
+    DATE_FORMAT(ea.afternoon_time_out, '%h:%i %p') AS afternoontimeOut,
     ea.absence_request AS absenceReq,
     
     -- Remarks logic
@@ -122,11 +149,17 @@ function getEventDetails(event_id) {
         WHEN ea.time_in IS NOT NULL 
          AND ea.trivia_time_in IS NOT NULL 
          AND ea.time_out IS NOT NULL 
+         AND ea.afternoon_time_in IS NOT NULL 
+         AND ea.afternoon_trivia_time_in IS NOT NULL 
+         AND ea.afternoon_time_out IS NOT NULL 
         THEN 'Present'
         WHEN ev.end_date_time < NOW() 
          AND ea.time_in IS NULL 
          AND ea.trivia_time_in IS NULL 
          AND ea.time_out IS NULL 
+         AND ea.afternoon_time_in IS NULL 
+         AND ea.afternoon_trivia_time_in IS NULL 
+         AND ea.afternoon_time_out IS NULL 
         THEN 'Missed'
         ELSE ea.remarks
     END AS remarks,
@@ -137,6 +170,9 @@ function getEventDetails(event_id) {
         WHEN ea.time_in IS NOT NULL 
          AND ea.trivia_time_in IS NOT NULL 
          AND ea.time_out IS NOT NULL 
+         AND ea.afternoon_time_in IS NOT NULL 
+         AND ea.afternoon_trivia_time_in IS NOT NULL
+         AND ea.afternoon_time_out IS NOT NULL 
         THEN 'Complete'
         WHEN ea.status = 2 THEN 'Excused'
         ELSE 'Unsettled'
@@ -219,6 +255,28 @@ function getAllAttendanceControls() {
   );
 }
 
+function getAttendanceControlsByEvent(event_id) {
+  return db.execute(
+    `SELECT 
+        ac.id AS controlID,
+        ac.event_id,
+        e.event_name AS eventName,
+        DATE_FORMAT(e.start_date_time, '%Y-%m-%d') AS eventDate,
+        ac.morning_time_in,
+        ac.morning_mid_event,
+        ac.morning_time_out,
+        ac.afternoon_time_in,
+        ac.afternoon_mid_event,
+        ac.afternoon_time_out,
+        ac.feedback_form
+     FROM attendance_controls ac
+     JOIN events e ON ac.event_id = e.id
+     WHERE e.id = ?
+     ORDER BY e.start_date_time DESC`,
+    [event_id]
+  );
+}
+
 function updateAttendanceControls(eventID, settings) {
   // settings already have keys like 'morning_time_in', 'morning_mid_event'
   const mappedSettings = {
@@ -266,5 +324,9 @@ module.exports = {
   settleAttendance,
   getBystudEvent,
   getAllAttendanceControls,
-  updateAttendanceControls
+  updateAttendanceControls,
+  updateAfternoonTimeIn,
+  updateAfternoonTriviaTimeIn,
+  updateAfternoonTimeOut,
+  getAttendanceControlsByEvent
 };

@@ -68,17 +68,17 @@
               <router-link to="/Update" class="sidebar-link">Featured Updates</router-link>
             </li>
             <li><router-link to="/account-center" class="sidebar-link">Account Center</router-link></li>
-            <li>
-              <router-link to="/adminLogIn" class="sidebar-link" @click="confirmLogout">
-                Log Out
-              </router-link>
+             <li>
+                <a href="javascript:void(0);" class="sidebar-link" @click="confirmLogout">
+                    Log Out
+                </a>
             </li>
           </ul>
         </div>
 
         <div class="main-content">
     
-        <h4>FEEDBACK SUMMARY</h4>
+        <h4>EVENT FEEDBACK SUMMARY</h4>
         <div style="display: flex; justify-content: flex-end; gap: 15px; margin-top: 20px;"></div>
           <div style="--background: transparent;">
 
@@ -192,77 +192,65 @@
 </template>
 
 <script setup lang="ts">
-import {
-  IonButton,
-  IonContent,
-  IonHeader,
-  IonIcon,
-  IonPage,
-  IonText,
-  IonToolbar
-} from '@ionic/vue';
-import { notifications } from 'ionicons/icons';
-import Swal from 'sweetalert2';
-import { computed, ref } from 'vue';
+import { ref, computed, onMounted } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
+import Swal from 'sweetalert2';
+import axios from 'axios';
 
 const router = useRouter();
 const route = useRoute();
+const eventID = route.params.eventID; // e.g., 48
 
-// Logout Confirmation
-const confirmLogout = async () => {
-  const result = await Swal.fire({
-    title: 'Are you sure?',
-    text: 'You will be logged out and redirected to the login page.',
-    icon: 'warning',
-    showCancelButton: true,
-    confirmButtonColor: '#3085d6',
-    cancelButtonColor: '#d33',
-    confirmButtonText: 'Yes, log me out!'
-  });
-
-  if (result.isConfirmed) {
-    router.push('/login');
-  }
-};
-
-// Sidebar Toggle States
+// Sidebar toggle states
 const showStudentMenu = ref(false);
 const showAcadMenu = ref(false);
 const showEventMenu = ref(false);
-
 const toggleStudentMenu = () => showStudentMenu.value = !showStudentMenu.value;
 const toggleAcadMenu = () => showAcadMenu.value = !showAcadMenu.value;
 const toggleEventMenu = () => showEventMenu.value = !showEventMenu.value;
 
-// State for sorting and pagination
+// Table state
+const feedbacks = ref<any[]>([]);
 const sortColumn = ref('');
 const sortOrder = ref<'asc' | 'desc'>('asc');
 const searchQuery = ref('');
 const currentPage = ref(1);
 const itemsPerPage = 10;
 
-const eventID = route.params.eventID;
+// Logout confirmation
+const confirmLogout = async () => {
+  const result = await Swal.fire({
+    title: 'Are you sure?',
+    text: 'You will be logged out.',
+    icon: 'warning',
+    showCancelButton: true,
+    confirmButtonText: 'Yes, log me out!',
+    didOpen: () => {
+      document.body.classList.remove('swal2-height-auto');
+      document.documentElement.classList.remove('swal2-height-auto');
+    },
+  });
 
-const goToFeedbackDetails = (eventID: number) => {
-  router.push(`/feedback-details/${eventID}`);
+  if (result.isConfirmed) {
+    try {
+      await axios.post('http://localhost:5000/api/users/admin-logout', {}, { withCredentials: true });
+      router.push('/adminLogIn'); // redirect to login page
+    } catch (err) {
+      console.error(err);
+      Swal.fire({
+        icon: 'error',
+        title: 'Error',
+        text: 'Logout failed',
+        didOpen: () => {
+          document.body.classList.remove('swal2-height-auto');
+          document.documentElement.classList.remove('swal2-height-auto');
+        }
+      });
+    }
+  }
 };
 
-// Data for Feedback Summary Table
-const feedbacks = ref([
-  {
-    eventID: 1,
-    eventName: 'Leadership Seminar',
-    dateTime: '2025-06-10 09:00 AM',
-    totalFeedbacks: 50,
-    eventStats: 'Completed',
-    studName: 'Juan Dela Cruz',
-    progYrSec: 'BSIT 3A',
-    feedbacks: 'The event was great!'
-  }
-]);
-
-// Sorting logic
+// Sorting function
 function sortData(column: string) {
   if (sortColumn.value === column) {
     sortOrder.value = sortOrder.value === 'asc' ? 'desc' : 'asc';
@@ -273,16 +261,57 @@ function sortData(column: string) {
   currentPage.value = 1;
 }
 
-// Feedback filtering and pagination
+// Fetch feedback for a specific event
+const fetchFeedbacks = async () => {
+  try {
+    const response = await axios.get(`http://localhost:5000/api/feedback/${eventID}`);
+    const data = response.data;
+
+    console
+
+    // if (!data.feedbackList || data.feedbackList.length === 0) {
+    //   feedbacks.value = [];
+    //   return;
+    // }
+
+    feedbacks.value = data.feedback.map((f: any) => {
+      const now = new Date();
+      const start = new Date(f.start_date_time);
+      const end = new Date(f.end_date_time);
+
+      let eventStatus = '';
+      if (now < start) {
+        eventStatus = 'Upcoming';
+      } else if (now >= start && now <= end) {
+        eventStatus = 'Ongoing';
+      } else {
+        eventStatus = 'Completed';
+      }
+
+      return {
+        eventID: f.event_id,
+        eventName: f.event_name,
+        dateTime: new Date(f.created_at).toLocaleString(),
+        totalFeedbacks: f.total_feedback_for_event,
+        eventStats: eventStatus,
+        studName: `${f.first_name} ${f.last_name}`,
+        progYrSec: `${f.course_code} ${f.year_name} ${f.section_name}`,
+        feedbacks: f.notes
+      };
+    });
+  } catch (error) {
+    console.error('Failed to fetch feedback:', error);
+  }
+};
+
+// Computed: filtering
 const filteredFeedbacks = computed(() => {
   let data = [...feedbacks.value];
   const query = searchQuery.value.toLowerCase();
 
   if (query) {
-    data = data.filter((item) =>
-      Object.values(item).some((val) =>
-        String(val).toLowerCase().includes(query)
-      )
+    data = data.filter(item =>
+      Object.values(item).some(val => String(val).toLowerCase().includes(query))
     );
   }
 
@@ -300,16 +329,24 @@ const filteredFeedbacks = computed(() => {
   return data;
 });
 
+// Paginated feedbacks
 const paginatedFeedbacks = computed(() => {
   const start = (currentPage.value - 1) * itemsPerPage;
   return filteredFeedbacks.value.slice(start, start + itemsPerPage);
 });
 
-const totalPages = computed(() => {
-  return Math.ceil(filteredFeedbacks.value.length / itemsPerPage);
-});
-</script>
+const totalPages = computed(() => Math.ceil(filteredFeedbacks.value.length / itemsPerPage));
 
+// Fetch data on mount
+onMounted(() => {
+  fetchFeedbacks();
+});
+
+// Navigate to feedback details
+const goToFeedbackDetails = (id: number) => {
+  router.push(`/feedback-details/${id}`);
+};
+</script>
 
 <style scoped>
 .toolbar-container::part(backdrop) {

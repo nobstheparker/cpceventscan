@@ -3,11 +3,9 @@
     <!-- Header -->
     <IonHeader>
       <IonToolbar>
-        <IonTitle>
           <div class="logo">
             <img src="../../public/img/cpclogo.jpg" alt="CPC Logo" />
           </div>
-        </IonTitle>
       </IonToolbar>
     </IonHeader>
 

@@ -1,5 +1,6 @@
 <template>
   <ion-page>
+    <!-- Header -->
     <ion-header>
       <ion-toolbar>
         <div style="display: flex; justify-content: space-between; align-items: center; width: 100%;">
@@ -12,6 +13,7 @@
 
     <ion-content class="ad-background">
       <div class="content-wrapper">
+        <!-- Sidebar -->
         <div class="sidebar">
           <router-link to="/dashboard" class="sidebar-title">Dashboard</router-link>
           <ul>
@@ -50,137 +52,127 @@
             <li><router-link to="/Update" class="sidebar-link">Featured Updates</router-link></li>
             <li><router-link to="/account-center" class="sidebar-link">Account Center</router-link></li>
             <li>
-              <router-link to="/adminLogIn" class="sidebar-link" @click="confirmLogout">
+              <a href="javascript:void(0);" class="sidebar-link" @click="confirmLogout">
                 Log Out
-              </router-link>
+              </a>
             </li>
           </ul>
         </div>
+
+        <!-- Main Content -->
         <div class="main-content">
-            <h3>STUDENT RECORDS</h3>
-                <ion-row class="ion-align-items-center ion-justify-content-between" style="margin-bottom: 10px;">
-                  <ion-col size="7">
-                  </ion-col>
-                  <ion-col size="5">
-                    <ion-searchbar
-                      v-model="searchQuery"
-                      class="white-searchbar"
-                      placeholder="Search..."
-                      animated
-                    />
-                  </ion-col>
-                </ion-row>
+          <h3>STUDENT RECORDS</h3>
+          <ion-row class="ion-align-items-center ion-justify-content-between" style="margin-bottom: 10px;">
+            <ion-col size="7"></ion-col>
+            <ion-col size="5">
+              <ion-searchbar
+                v-model="searchQuery"
+                class="white-searchbar"
+                placeholder="Search..."
+                animated
+              />
+            </ion-col>
+          </ion-row>
 
-                <div>
-                <table style="width: 100%; border-collapse: collapse; font-size: 14px; overflow: scroll;">
-                  <thead>
-                    <tr>
-                      <th style="cursor:pointer;" @click="sortData('studID')">
-                        Student ID
-                        <span v-if="sortColumn === 'studID'">{{ sortOrder === 'asc' ? '▲' : '▼' }}</span>
-                      </th>
-                      <th style="cursor:pointer;" @click="sortData('studName')">
-                        Full Name
-                        <span v-if="sortColumn === 'studName'">{{ sortOrder === 'asc' ? '▲' : '▼' }}</span>
-                      </th>
-                      <th style="cursor:pointer;" @click="sortData('ProgYrSec')">
-                        Course, Yr & Section
-                        <span v-if="sortColumn === 'ProgYrSec'">{{ sortOrder === 'asc' ? '▲' : '▼' }}</span>
-                      </th>
-                      <th style="cursor:pointer;" @click="sortData('bday')">
-                        Birthday
-                        <span v-if="sortColumn === 'bday'">{{ sortOrder === 'asc' ? '▲' : '▼' }}</span>
-                      </th>
-                      <th style="cursor:pointer;" @click="sortData('sex')">
-                        Sex
-                        <span v-if="sortColumn === 'sex'">{{ sortOrder === 'asc' ? '▲' : '▼' }}</span>
-                      </th>
-                      <th style="cursor:pointer;" @click="sortData('email')">
-                        Email
-                        <span v-if="sortColumn === 'email'">{{ sortOrder === 'asc' ? '▲' : '▼' }}</span>
-                      </th>
-                      <th style="cursor:pointer;" @click="sortData('phone')">
-                        Phone
-                        <span v-if="sortColumn === 'phone'">{{ sortOrder === 'asc' ? '▲' : '▼' }}</span>
-                      </th>
-                      <th :style="{ width: '200px' }">Actions</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    <tr v-for="student in paginatedStudents" 
-                      :key="student.id" 
-                      :class="{ 'deactivated-row': student.status === 1 }">
-                      <td>{{ student.student_id }}</td>
-                      <td>
-                        {{ student.first_name }} {{ student.middle_name }} {{ student.last_name }}
-                      </td>
-                      <td>{{ student.course_code }} {{ student.year_level }} {{ student.section_name }}</td>
-                      <td>
-                        {{ new Date(student.birthday).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' }) }}
-                      </td>
-                      <td>{{ student.sex }}</td>
-                      <td>{{ student.email }}</td>
-                      <td>N/A</td>
-                      <td :style="{ display: 'flex' }">
-                        <ion-button
-                          v-if="student.status !== 1"
-                          size="small"
-                          fill="solid"
-                          style="--background: #970303; --color: white;"
-                          expand="block"
-                          @click="confirmDeactivate(student.id)"
-                        >
-                          Deactivate
-                        </ion-button>
-                        <ion-button
-                          v-else
-                          size="small"
-                          fill="solid"
-                          style="--background: #0a8f08; --color: white;"
-                          expand="block"
-                          @click="confirmActivate(student.id)"
-                        >
-                          Activate
-                        </ion-button>
-                        <ion-button size="small" fill="solid" style="--background: #07055d;--color: white;" expand="block">
-                          Attendance
-                        </ion-button>
-                      </td>
-                    </tr>
-                  </tbody>
-                </table>
-              </div>
-            <div class="pagination-container">
-              <button 
-                :disabled="currentPage === 1" 
-                @click="currentPage--"
-                class="pagination-button"
-                aria-label="Previous page"
-              >
-                &laquo; Prev
-              </button>
+          <div>
+            <table style="width: 100%; border-collapse: collapse; font-size: 14px; overflow: scroll;">
+              <thead>
+                <tr>
+                  <th style="cursor:pointer;" @click="sortData('student_id')">
+                    Student ID
+                    <span v-if="sortColumn === 'student_id'">{{ sortOrder === 'asc' ? '▲' : '▼' }}</span>
+                  </th>
+                  <th style="cursor:pointer;" @click="sortData('first_name')">
+                    Full Name
+                    <span v-if="sortColumn === 'first_name'">{{ sortOrder === 'asc' ? '▲' : '▼' }}</span>
+                  </th>
+                  <th style="cursor:pointer;" @click="sortData('course_code')">
+                    Course, Yr & Section
+                    <span v-if="sortColumn === 'course_code'">{{ sortOrder === 'asc' ? '▲' : '▼' }}</span>
+                  </th>
+                  <th style="cursor:pointer;" @click="sortData('birthday')">
+                    Birthday
+                    <span v-if="sortColumn === 'birthday'">{{ sortOrder === 'asc' ? '▲' : '▼' }}</span>
+                  </th>
+                  <th style="cursor:pointer;" @click="sortData('sex')">
+                    Sex
+                    <span v-if="sortColumn === 'sex'">{{ sortOrder === 'asc' ? '▲' : '▼' }}</span>
+                  </th>
+                  <th style="cursor:pointer;" @click="sortData('email')">
+                    Email
+                    <span v-if="sortColumn === 'email'">{{ sortOrder === 'asc' ? '▲' : '▼' }}</span>
+                  </th>
+                  <th style="cursor:pointer;" @click="sortData('phone')">
+                    Phone
+                    <span v-if="sortColumn === 'phone'">{{ sortOrder === 'asc' ? '▲' : '▼' }}</span>
+                  </th>
+                  <th :style="{ width: '200px' }">Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr
+                  v-for="student in paginatedStudents"
+                  :key="student.id"
+                  :class="{ 'deactivated-row': student.status === 1 }"
+                >
+                  <td>{{ student.student_id }}</td>
+                  <td>{{ student.first_name }} {{ student.middle_name }} {{ student.last_name }}</td>
+                  <td>{{ student.course_code }} {{ student.year_level }} {{ student.section_name }}</td>
+                  <td>{{ new Date(student.birthday).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' }) }}</td>
+                  <td>{{ student.sex }}</td>
+                  <td>{{ student.email }}</td>
+                  <td>N/A</td>
+                  <td style="display: flex;">
+                    <ion-button
+                      v-if="student.status !== 1"
+                      size="small"
+                      fill="solid"
+                      style="--background: #970303; --color: white;"
+                      expand="block"
+                      @click="confirmDeactivate(student.id)"
+                    >
+                      Deactivate
+                    </ion-button>
+                    <ion-button
+                      v-else
+                      size="small"
+                      fill="solid"
+                      style="--background: #0a8f08; --color: white;"
+                      expand="block"
+                      @click="confirmActivate(student.id)"
+                    >
+                      Activate
+                    </ion-button>
+                    <ion-button
+                    size="small"
+                    fill="solid"
+                    style="--background: #07055d; --color: white;"
+                    expand="block"
+                    :router-link="'/attendance-logs'"
+                  >
+                    Attendance
+                  </ion-button>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
 
-              <button 
-                v-for="page in totalPages"
-                :key="page"
-                :class="['pagination-button', { active: currentPage === page }]"
-                @click="currentPage = page"
-                :aria-current="currentPage === page ? 'page' : false"
-              >
-                {{ page }}
-              </button>
-
-              <button 
-                :disabled="currentPage === totalPages" 
-                @click="currentPage++"
-                class="pagination-button"
-                aria-label="Next page"
-              >
-                Next &raquo;
-              </button>
-            </div>
-            </div> 
+          <!-- Pagination -->
+          <div class="pagination-container">
+            <button :disabled="currentPage === 1" @click="currentPage--" class="pagination-button">&laquo; Prev</button>
+            <button
+              v-for="page in totalPages"
+              :key="page"
+              :class="['pagination-button', { active: currentPage === page }]"
+              @click="currentPage = page"
+            >
+              {{ page }}
+            </button>
+            <button :disabled="currentPage === totalPages" @click="currentPage++" class="pagination-button">Next &raquo;</button>
+          </div>
         </div>
+      </div>
     </ion-content>
 
     <div class="footer">
@@ -192,217 +184,141 @@
 </template>
 
 <script setup lang="ts">
-import {
-  IonButton,
-  IonCol,
-  IonContent,
-  IonHeader,
-  IonIcon,
-  IonPage,
-  IonRow,
-  IonSearchbar,
-  IonText,
-  IonToolbar
-} from '@ionic/vue';
-import axios from 'axios';
-import { notifications } from 'ionicons/icons';
-import Swal from 'sweetalert2';
-import { computed, onMounted, ref } from 'vue';
+import { IonButton, IonCol, IonContent, IonHeader, IonPage, IonRow, IonSearchbar, IonText, IonToolbar } from '@ionic/vue';
+import { ref, computed, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
+import axios from 'axios';
+import Swal from 'sweetalert2';
 
 const router = useRouter();
 
-const confirmLogout = async () => {
-  const result = await Swal.fire({
-    title: 'Are you sure?',
-    text: 'You will be logged out and redirected to the login page.',
-    icon: 'warning',
-    showCancelButton: true,
-    confirmButtonColor: '#3085d6',
-    cancelButtonColor: '#d33',
-    confirmButtonText: 'Yes, log me out!',
-    didOpen: () => {
-          document.body.classList.remove("swal2-height-auto");
-          document.documentElement.classList.remove("swal2-height-auto");
-        }
-  });
-
-  if (result.isConfirmed) {
-    router.push('/login');
-  }
-};
-
+// Sidebar toggles
 const showStudentMenu = ref(false);
 const showAcadMenu = ref(false);
 const showEventMenu = ref(false);
-
 const toggleStudentMenu = () => (showStudentMenu.value = !showStudentMenu.value);
 const toggleAcadMenu = () => (showAcadMenu.value = !showAcadMenu.value);
 const toggleEventMenu = () => (showEventMenu.value = !showEventMenu.value);
 
+// Students
 const students = ref<any[]>([]);
 const searchQuery = ref('');
-const sortColumn = ref('studID');
+const sortColumn = ref('student_id');
 const sortOrder = ref<'asc' | 'desc'>('asc');
-
 const currentPage = ref(1);
 const itemsPerPage = 10;
 
+// Fetch students
 const fetchStudents = async () => {
   try {
-    const response = await axios.get('http://localhost:5000/api/students/list'); 
-    students.value = response.data.students;
-  } catch (error) {
-    console.error('Failed to fetch students:', error);
+    const res = await axios.get('http://localhost:5000/api/students/list');
+    students.value = res.data.students;
+  } catch (err) {
+    console.error(err);
   }
 };
 
-onMounted(() => {
-  fetchStudents();
-});
+onMounted(() => fetchStudents());
 
+// Computed: filtered + sorted
 const filteredStudents = computed(() => {
   let result = [...students.value];
 
   if (searchQuery.value) {
     const query = searchQuery.value.toLowerCase();
-    result = result.filter((student) =>
-      Object.values(student).some((value) =>
-        String(value).toLowerCase().includes(query)
-      )
+    result = result.filter(student =>
+      Object.values(student).some(val => String(val).toLowerCase().includes(query))
     );
   }
 
   result.sort((a, b) => {
-    const column = sortColumn.value;
+    let aVal = a[sortColumn.value];
+    let bVal = b[sortColumn.value];
+    if (typeof aVal === 'string') aVal = aVal.toLowerCase();
+    if (typeof bVal === 'string') bVal = bVal.toLowerCase();
 
-    let aValue = a[column];
-    let bValue = b[column];
-
-    if (aValue === undefined || bValue === undefined) return 0;
-    if (typeof aValue === 'string') aValue = aValue.toLowerCase();
-    if (typeof bValue === 'string') bValue = bValue.toLowerCase();
-
-    if (aValue < bValue) return sortOrder.value === 'asc' ? -1 : 1;
-    if (aValue > bValue) return sortOrder.value === 'asc' ? 1 : -1;
+    if (aVal < bVal) return sortOrder.value === 'asc' ? -1 : 1;
+    if (aVal > bVal) return sortOrder.value === 'asc' ? 1 : -1;
     return 0;
   });
 
   return result;
 });
 
-const totalPages = computed(() => {
-  return Math.ceil(filteredStudents.value.length / itemsPerPage);
-});
-
+const totalPages = computed(() => Math.ceil(filteredStudents.value.length / itemsPerPage));
 const paginatedStudents = computed(() => {
   const start = (currentPage.value - 1) * itemsPerPage;
   return filteredStudents.value.slice(start, start + itemsPerPage);
 });
 
+// Sorting
 const sortData = (column: string) => {
-  if (sortColumn.value === column) {
-    sortOrder.value = sortOrder.value === 'asc' ? 'desc' : 'asc';
-  } else {
-    sortColumn.value = column;
-    sortOrder.value = 'asc';
-  }
+  if (sortColumn.value === column) sortOrder.value = sortOrder.value === 'asc' ? 'desc' : 'asc';
+  else { sortColumn.value = column; sortOrder.value = 'asc'; }
   currentPage.value = 1;
 };
-const confirmDeactivate = async (studentId: number) => {
-  const result = await Swal.fire({
-    title: 'Are you sure?',
-    text: 'Do you really want to deactivate this student?',
+
+// Activate / Deactivate
+const confirmDeactivate = async (id: number) => {
+  const res = await Swal.fire({
+    title: 'Deactivate student?',
     icon: 'warning',
     showCancelButton: true,
-    confirmButtonColor: '#d33',
-    cancelButtonColor: '#3085d6',
-    confirmButtonText: 'Yes, deactivate!',
+    confirmButtonText: 'Yes',
     didOpen: () => {
       document.body.classList.remove('swal2-height-auto');
       document.documentElement.classList.remove('swal2-height-auto');
     }
   });
-
-  if (result.isConfirmed) {
-    try {
-      await axios.put(`http://localhost:5000/api/students/deactivate/${studentId}`);
-      await Swal.fire({
-        title: 'Deactivated!',
-        text: 'The student has been deactivated.',
-        icon: 'success',
-        confirmButtonText: 'OK',
-        didOpen: () => {
-          document.body.classList.remove('swal2-height-auto');
-          document.documentElement.classList.remove('swal2-height-auto');
-        }
-      });
-      fetchStudents();
-    } catch (error) {
-      console.error('Failed to deactivate student:', error);
-      Swal.fire({
-        title: 'Error',
-        text: 'Failed to deactivate the student.',
-        icon: 'error',
-        didOpen: () => {
-          document.body.classList.remove('swal2-height-auto');
-          document.documentElement.classList.remove('swal2-height-auto');
-        }
-      });
-    }
+  if (res.isConfirmed) {
+    await axios.put(`http://localhost:5000/api/students/deactivate/${id}`);
+    fetchStudents();
+    Swal.fire({ title: 'Deactivated!', icon: 'success', didOpen: () => {
+      document.body.classList.remove('swal2-height-auto');
+      document.documentElement.classList.remove('swal2-height-auto');
+    }});
   }
 };
-const confirmActivate = async (studentId: number) => {
-  const result = await Swal.fire({
-    title: 'Are you sure?',
-    text: 'Do you want to activate this student?',
+
+const confirmActivate = async (id: number) => {
+  const res = await Swal.fire({
+    title: 'Activate student?',
     icon: 'warning',
     showCancelButton: true,
-    confirmButtonColor: '#3085d6',
-    cancelButtonColor: '#d33',
-    confirmButtonText: 'Yes, activate!',
+    confirmButtonText: 'Yes',
     didOpen: () => {
       document.body.classList.remove('swal2-height-auto');
       document.documentElement.classList.remove('swal2-height-auto');
-    },
-  });
-
-  if (result.isConfirmed) {
-    try {
-      await axios.put(`http://localhost:5000/api/students/activate/${studentId}`);
-      Swal.fire({
-        title: 'Activated!',
-        text: 'The student has been activated.',
-        icon: 'success',
-        confirmButtonText: 'OK',
-        didOpen: () => {
-          document.body.classList.remove('swal2-height-auto');
-          document.documentElement.classList.remove('swal2-height-auto');
-        },
-      }).then(() => {
-        document.body.classList.remove('swal2-height-auto');
-        document.documentElement.classList.remove('swal2-height-auto');
-      });
-      fetchStudents();
-    } catch (error) {
-      console.error('Failed to activate student:', error);
-      Swal.fire({
-        title: 'Error',
-        text: 'Failed to activate the student.',
-        icon: 'error',
-        confirmButtonText: 'OK',
-        didOpen: () => {
-          document.body.classList.remove('swal2-height-auto');
-          document.documentElement.classList.remove('swal2-height-auto');
-        },
-      }).then(() => {
-        document.body.classList.remove('swal2-height-auto');
-        document.documentElement.classList.remove('swal2-height-auto');
-      });
     }
+  });
+  if (res.isConfirmed) {
+    await axios.put(`http://localhost:5000/api/students/activate/${id}`);
+    fetchStudents();
+    Swal.fire({ title: 'Activated!', icon: 'success', didOpen: () => {
+      document.body.classList.remove('swal2-height-auto');
+      document.documentElement.classList.remove('swal2-height-auto');
+    }});
   }
 };
 
+// Logout
+const confirmLogout = async () => {
+  const res = await Swal.fire({
+    title: 'Are you sure?',
+    text: 'You will be logged out.',
+    icon: 'warning',
+    showCancelButton: true,
+    confirmButtonText: 'Yes, log me out!',
+    didOpen: () => {
+      document.body.classList.remove('swal2-height-auto');
+      document.documentElement.classList.remove('swal2-height-auto');
+    }
+  });
+  if (res.isConfirmed) {
+    await axios.post('http://localhost:5000/api/users/admin-logout', {}, { withCredentials: true });
+    router.push('/adminLogIn');
+  }
+};
 </script>
 
 <style scoped>
@@ -430,9 +346,6 @@ thead th {
   padding: 10px;
   text-align: left;
   white-space: nowrap;
-}
-table {
-  background-color: white;
 }
 
 table td {

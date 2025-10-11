@@ -65,10 +65,10 @@
                     <li>
                       <router-link to="/account-center" class="sidebar-link">Account Center</router-link>
                     </li>
-                    <li>
-                        <router-link to="/adminLogIn" class="sidebar-link" @click="confirmLogout">
-                        Log Out
-                    </router-link>
+                     <li>
+                        <a href="javascript:void(0);" class="sidebar-link" @click="confirmLogout">
+                            Log Out
+                        </a>
                     </li>
                 </ul>
             </div>
@@ -141,19 +141,35 @@ const courses = ref<any[]>([]);
 const selectedCourseId = ref('');
 const Yearlvl = ref('');
 
-const confirmLogout = async () => {
+ const confirmLogout = async () => {
   const result = await Swal.fire({
     title: 'Are you sure?',
-    text: 'You will be logged out and redirected to the login page.',
+    text: 'You will be logged out.',
     icon: 'warning',
     showCancelButton: true,
-    confirmButtonColor: '#3085d6',
-    cancelButtonColor: '#d33',
-    confirmButtonText: 'Yes, log me out!'
+    confirmButtonText: 'Yes, log me out!',
+    didOpen: () => {
+      document.body.classList.remove('swal2-height-auto');
+      document.documentElement.classList.remove('swal2-height-auto');
+    },
   });
 
   if (result.isConfirmed) {
-    router.push('/login');
+    try {
+      await axios.post('http://localhost:5000/api/users/admin-logout', {}, { withCredentials: true });
+      router.push('/adminLogIn'); // redirect to login page
+    } catch (err) {
+      console.error(err);
+      Swal.fire({
+        icon: 'error',
+        title: 'Error',
+        text: 'Logout failed',
+        didOpen: () => {
+          document.body.classList.remove('swal2-height-auto');
+          document.documentElement.classList.remove('swal2-height-auto');
+        }
+      });
+    }
   }
 };
 

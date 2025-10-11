@@ -2,18 +2,16 @@
   <ion-page>
     <IonHeader>
       <IonToolbar>
-        <IonTitle class="attendance-header">
           <div class="logo">
             <img src="../../public/img/cpclogo.jpg" alt="CPC Logo" />
           </div>
-        </IonTitle>
       </IonToolbar>
     </IonHeader>
 
     <IonContent>
       <div id="container">
         <h1>ATTENDANCE RECORDS</h1>
-        <h3>Event Attendance Summary</h3>
+
 
         <!-- ✅ Attendance Summary -->
         <div class="attendance-summary">

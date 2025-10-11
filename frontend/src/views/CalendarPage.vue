@@ -2,11 +2,9 @@
   <ion-page>
     <ion-header>
       <ion-toolbar>
-        <ion-title>
           <div class="logo">
             <img src="../../public/img/cpclogo.jpg" alt="CPC Logo" />
           </div>
-        </ion-title>
       </ion-toolbar>
     </ion-header>
 
@@ -47,7 +45,12 @@
           <router-link to="/"><ion-icon name="home"></ion-icon></router-link>
           <router-link to="/calendar-page"><ion-icon name="calendar" class="active"></ion-icon></router-link>
           <router-link to="/scanner"><ion-icon name="scan"></ion-icon></router-link>
-          <router-link to="/notifications"><ion-icon name="notifications"></ion-icon></router-link>
+          <div class="notif-icon-wrapper">
+              <router-link to="/notifications">
+                <ion-icon name="notifications"></ion-icon>
+                <span v-if="unreadCount > 0" class="badge-footer">{{ unreadCount }}</span>
+              </router-link>
+            </div>
           <router-link to="/profile"><ion-icon name="person"></ion-icon></router-link>
         </div>
         <ion-text><small>&copy; All Rights Reserved PPG 2025.</small></ion-text>
@@ -70,6 +73,7 @@ import {
 import axios from 'axios';
 import { ref, onMounted } from 'vue';
 
+// --- Events ---
 const events = ref<any[]>([]);
 
 const formatEventDateRange = (startDate: string, endDate: string) => {
@@ -96,10 +100,105 @@ const fetchEvents = async () => {
   }
 };
 
-onMounted(() => {
-  fetchEvents();
+// --- Student & Notifications ---
+const student = ref<any>(null);
+const studentId = ref<number>(0);
+const studentCourseId = ref<number>(0);
+
+interface Notification {
+  id: number;
+  title: string;
+  message: string;
+  created_at: string;
+  read: boolean;
+  label?: string;
+}
+
+const notifications = ref<Notification[]>([]);
+const unreadCount = ref(0);
+
+const getNotificationLabel = (createdAt: string) => {
+  const notifDate = new Date(createdAt);
+  const today = new Date();
+  const yesterday = new Date(today);
+  yesterday.setDate(today.getDate() - 1);
+
+  if (
+    notifDate.getFullYear() === today.getFullYear() &&
+    notifDate.getMonth() === today.getMonth() &&
+    notifDate.getDate() === today.getDate()
+  ) {
+    return 'Today';
+  } else if (
+    notifDate.getFullYear() === yesterday.getFullYear() &&
+    notifDate.getMonth() === yesterday.getMonth() &&
+    notifDate.getDate() === yesterday.getDate()
+  ) {
+    return 'Yesterday';
+  } else {
+    return notifDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+  }
+};
+
+const fetchLoggedInStudent = async () => {
+  try {
+    const res = await axios.get('http://localhost:5000/api/protected', { withCredentials: true });
+    student.value = res.data.student;
+    studentId.value = student.value.id;
+    studentCourseId.value = student.value.course_id;
+  } catch (err) {
+    console.error('Failed to get logged-in student:', err);
+  }
+};
+
+const fetchNotifications = async () => {
+  if (!studentId.value) return;
+
+  try {
+    const res = await axios.get('http://localhost:5000/api/notifications/list', {
+      params: { student_id: studentId.value },
+    });
+
+    const filtered = (res.data || []).filter((notif: any) => {
+      const selectedStudents = Array.isArray(notif.selected_students)
+        ? notif.selected_students
+        : JSON.parse(notif.selected_students || '[]');
+
+      const selectedCourses = Array.isArray(notif.selected_courses)
+        ? notif.selected_courses
+        : JSON.parse(notif.selected_courses || '[]');
+
+      return (
+        notif.recipient_mode === 'all' ||
+        selectedStudents.includes(studentId.value) ||
+        selectedCourses.includes(studentCourseId.value)
+      );
+    });
+
+    notifications.value = filtered.map((notif: any) => ({
+      id: notif.id,
+      title: notif.notif_type,
+      message: notif.notif_message,
+      created_at: notif.created_at,
+      read: notif.read,
+      label: getNotificationLabel(notif.created_at),
+    }));
+
+    // Update unread count
+    unreadCount.value = notifications.value.filter(n => !n.read).length;
+  } catch (err) {
+    console.error('Failed to fetch notifications:', err);
+  }
+};
+
+// --- Lifecycle ---
+onMounted(async () => {
+  await fetchLoggedInStudent();
+  await fetchEvents();
+  await fetchNotifications();
 });
 </script>
+
 
 <style scoped>
 .ion-page {
@@ -116,7 +215,7 @@ ion-content {
 #container {
   margin-top: 0;
   text-align: left;
-  padding-bottom: 200px;
+  padding-bottom: 300px;
   padding-top: 0px !important;
   padding-left: 0 !important;
   padding-right: 0 !important;
@@ -217,7 +316,21 @@ ion-grid ion-row.content p{
   width: 100%;
   z-index: 100;
 }
+.notif-icon-wrapper {
+  position: relative;
+  display: inline-block;
+}
 
+.badge-footer {
+  position: absolute;
+  top: -5px;
+  right: -10px;
+  background-color: red;
+  color: white;
+  border-radius: 50%;
+  font-size: 12px;
+  padding: 2px 6px;
+}
 .footer-icons {
   display: flex;
   justify-content: space-around;

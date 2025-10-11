@@ -3,82 +3,64 @@
     <!-- Header with Logo -->
     <ion-header>
       <ion-toolbar>
-        <ion-title>
-          <div class="logo">
-            <img src="../../public/img/cpclogo.jpg" alt="CPC Logo" />
-          </div>
-        </ion-title>
+        <div class="logo">
+          <img src="../../public/img/cpclogo.jpg" alt="CPC Logo" />
+        </div>
       </ion-toolbar>
     </ion-header>
 
     <ion-content class="help-center">
-        <div id="container">
-            <div class="greeting" v-if="studentLoaded">
-                <h2>Hello {{ fullName }},</h2>
-                <p>How can we help?</p>
-                <ion-searchbar placeholder="Search"></ion-searchbar>
-            </div>
-
-            <!-- FAQ Section as Accordion -->
-            <ion-card class="faq-section">
-                <ion-card-header>
-                <ion-card-title>❓ FAQ (Frequently Asked Questions)</ion-card-title>
-                </ion-card-header>
-                <ion-card-content>
-                <ion-accordion-group>
-                    <ion-accordion value="attendance">
-                    <ion-item slot="header" detail>
-                        How do I scan my attendance?
-                    </ion-item>
-                    <div class="ion-padding" slot="content">
-                        To scan your attendance, open the app, go to the Attendance section, and scan the QR code provided by your class officer.
-                    </div>
-                    </ion-accordion>
-
-                    <ion-accordion value="missed-time">
-                    <ion-item slot="header" detail>
-                        What should I do if I missed time-in or time-out?
-                    </ion-item>
-                    <div class="ion-padding" slot="content">
-                        Report it to your class officer or SAO office immediately for manual correction.
-                    </div>
-                    </ion-accordion>
-
-                    <ion-accordion value="absence">
-                    <ion-item slot="header" detail>
-                        How do I request an absence?
-                    </ion-item>
-                    <div class="ion-padding" slot="content">
-                        Submit your absence request via the app or contact the SAO office directly.
-                    </div>
-                    </ion-accordion>
-
-                    <ion-accordion value="payment">
-                    <ion-item slot="header" detail>
-                        How do I pay my fines?
-                    </ion-item>
-                    <div class="ion-padding" slot="content">
-                        Fines can be paid at the school cashier or online. Keep a receipt.
-                    </div>
-                    </ion-accordion>
-                </ion-accordion-group>
-                </ion-card-content>
-            </ion-card>
-
-            <!-- Contact Support Section -->
-            <ion-card class="contact-section">
-                <ion-card-header>
-                <ion-card-title>📞 Contact Support</ion-card-title>
-                </ion-card-header>
-                <ion-card-content>
-                <ul>
-                    <li>Visit the SAO or SSG Office during school hours.</li>
-                    <li>Email us at: support@yourdomain.edu</li>
-                    <li>Call us at: (XXX) XXX-XXXX for urgent matters.</li>
-                </ul>
-                </ion-card-content>
-            </ion-card>
+      <div id="container">
+        <div class="greeting" v-if="studentLoaded">
+          <h2>Hello {{ fullName }},</h2>
+          <p>How can we help?</p>
+          <ion-searchbar
+            v-model="searchQuery"
+            placeholder="Search FAQ"
+            debounce="300"
+          ></ion-searchbar>
         </div>
+
+        <!-- FAQ Section as Accordion -->
+        <ion-card class="faq-section">
+          <ion-card-header>
+            <ion-card-title>❓ FAQ (Frequently Asked Questions)</ion-card-title>
+          </ion-card-header>
+          <ion-card-content>
+            <ion-accordion-group>
+              <ion-accordion
+                v-for="faq in filteredFaqs"
+                :key="faq.id"
+                :value="faq.value"
+              >
+                <ion-item slot="header" detail>
+                  {{ faq.question }}
+                </ion-item>
+                <div class="ion-padding" slot="content">
+                  {{ faq.answer }}
+                </div>
+              </ion-accordion>
+            </ion-accordion-group>
+            <div v-if="filteredFaqs.length === 0" class="ion-padding">
+              No results found.
+            </div>
+          </ion-card-content>
+        </ion-card>
+
+        <!-- Contact Support Section -->
+        <ion-card class="contact-section">
+          <ion-card-header>
+            <ion-card-title>📞 Contact Support</ion-card-title>
+          </ion-card-header>
+          <ion-card-content>
+            <ul>
+              <li>Visit the SAO or SSG Office during school hours.</li>
+              <li>Email us at: support@yourdomain.edu</li>
+              <li>Call us at: (XXX) XXX-XXXX for urgent matters.</li>
+            </ul>
+          </ion-card-content>
+        </ion-card>
+      </div>
     </ion-content>
 
     <!-- Footer -->
@@ -96,40 +78,60 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, computed } from 'vue';
+import { ref, computed, onMounted } from 'vue';
 import axios from 'axios';
+import {
+  IonPage,
+  IonHeader,
+  IonToolbar,
+  IonCard,
+  IonCardHeader,
+  IonCardTitle,
+  IonCardContent,
+  IonAccordionGroup,
+  IonAccordion,
+  IonItem,
+  IonSearchbar,
+  IonIcon,
+  IonText,
+} from '@ionic/vue';
 
-const student = ref<any>(null); // initially null
-const courses = ref([]);
-const sections = ref([]);
-const yearLevels = ref([]);
+// --- Student Info ---
+const student = ref<any>(null);
 const studentLoaded = ref(false);
 
-// Computed: Full Name
 const fullName = computed(() => {
   if (!student.value) return '';
   const s = student.value;
   return `${s.first_name} ${s.last_name}`.toUpperCase();
 });
 
-// Helper functions for course, year, section names
-const getCourseName = (id: number | string) => courses.value.find(c => c.course_id == id)?.course_code || '';
-const getYearLabel = (id: number | string) => yearLevels.value.find(y => y.YearID == id)?.YearLvl || '';
-const getSectionName = (id: number | string) => sections.value.find(s => s.section_id == id)?.section_name || '';
-
-const courseSection = computed(() => {
-  if (!student.value) return '';
-  return `${getCourseName(student.value.course_id)} ${getYearLabel(student.value.year_level_id)} ${getSectionName(student.value.section_id)}`.toUpperCase();
-});
-
-// Profile image with fallback
-const studentImage = computed(() => student.value?.image_url || '../../public/img/user.jpg');
-const onImageError = (event: Event) => {
-  const target = event.target as HTMLImageElement;
-  target.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(fullName.value)}&background=ffffff&color=08055e&bold=true&size=128`;
+// --- Navigation ---
+const goTo = (path: string) => {
+  window.location.href = path;
 };
 
-// Fetch student session and supporting lists
+// --- FAQ List ---
+const faqs = ref([
+  { id: 1, value: 'attendance', question: 'How do I scan my attendance?', answer: 'To scan your attendance, open the app, go to the Attendance section, and scan the QR code provided by your class officer.' },
+  { id: 2, value: 'missed-time', question: 'What should I do if I missed time-in or time-out?', answer: 'Report it to your class officer or SAO office immediately for manual correction.' },
+  { id: 3, value: 'absence', question: 'How do I request an absence?', answer: 'Submit your absence request via the app or contact the SAO office directly.' },
+  { id: 4, value: 'payment', question: 'How do I pay my fines?', answer: 'Fines can be paid at the school cashier or online. Keep a receipt.' },
+]);
+
+// --- Search Functionality ---
+const searchQuery = ref('');
+const filteredFaqs = computed(() => {
+  if (!searchQuery.value) return faqs.value;
+  const query = searchQuery.value.toLowerCase();
+  return faqs.value.filter(
+    (f) =>
+      f.question.toLowerCase().includes(query) ||
+      f.answer.toLowerCase().includes(query)
+  );
+});
+
+// --- Fetch student session ---
 onMounted(async () => {
   try {
     const res = await axios.get('http://localhost:5000/api/protected', { withCredentials: true });
@@ -138,25 +140,7 @@ onMounted(async () => {
   } catch (error) {
     console.error('Session fetch failed:', error);
   }
-
-  try {
-    const [resCourses, resSections, resYear] = await Promise.all([
-      axios.get('http://localhost:5000/api/courses/list'),
-      axios.get('http://localhost:5000/api/sections/list'),
-      axios.get('http://localhost:5000/api/year-level/list')
-    ]);
-    courses.value = resCourses.data.courses || [];
-    sections.value = resSections.data.sections || [];
-    yearLevels.value = resYear.data.yearLevels || [];
-  } catch (error) {
-    console.error('Failed to fetch lists:', error);
-  }
 });
-
-// Navigation
-const goTo = (path: string) => {
-  window.location.href = path;
-};
 </script>
 
 <style scoped>
@@ -184,6 +168,13 @@ ion-grid.header {
 }
 .greeting ion-searchbar {
     padding: 10px 0;
+}
+ion-searchbar {
+  --background: #f5f5f5;       /* input background */
+  --color: #000;            /* input text color */
+  --placeholder-color: #999;   /* placeholder color */
+  --border-radius: 12px;       /* rounded corners */
+  --padding-start: 12px;       /* left padding */
 }
 .header ion-row {
   align-items: center;

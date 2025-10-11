@@ -1,20 +1,30 @@
 const db = require('../config/db');
 
-const saveFaceImage = async (studentId, descriptor) => {
-  const sql = `
-    INSERT INTO face_images (student_id, image)
-    VALUES (?, ?)
-    ON DUPLICATE KEY UPDATE image = VALUES(image)
-  `;
-  const [result] = await db.query(sql, [studentId, descriptor]);
-  return result.insertId;
+const saveFaceImage = async (studentId, image, luxandId = null) => {
+  try {
+    const sql = `
+      INSERT INTO face_images (student_id, image, luxand_id)
+      VALUES (?, ?, ?)
+      ON DUPLICATE KEY UPDATE image = VALUES(image), luxand_id = VALUES(luxand_id)
+    `;
+    console.log('Running SQL:', sql);
+    console.log('With params:', [studentId, image, luxandId]);
+
+    const [result] = await db.query(sql, [studentId, image, luxandId]);
+    console.log('Database result:', result);
+    return result.insertId;
+  } catch (err) {
+    console.error('Database error:', err);
+    throw err;
+  }
 };
 
+
 const getFaceImageByStudentId = async (studentId) => {
-  const sql = `SELECT image FROM face_images WHERE student_id = ? LIMIT 1`;
+  const sql = `SELECT image, luxand_id FROM face_images WHERE student_id = ? LIMIT 1`;
   const [rows] = await db.query(sql, [studentId]);
   if (!rows.length) return null;
-  return rows[0].image;
+  return rows[0]; // return both image and luxand_id
 };
 
 const getAllFaces = async () => {

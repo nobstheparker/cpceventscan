@@ -2,11 +2,9 @@
   <ion-page>
     <ion-header>
       <ion-toolbar>
-        <ion-title>
           <div class="logo">
             <img src="../../public/img/cpclogo.jpg" alt="CPC Logo" />
           </div>
-        </ion-title>
       </ion-toolbar>
     </ion-header>
 
@@ -73,7 +71,12 @@
           <ion-icon name="home" @click="goTo('/')"></ion-icon>
           <ion-icon name="calendar" @click="goTo('/calendar-page')"></ion-icon>
           <ion-icon name="scan" @click="goTo('/scanner')"></ion-icon>
-          <ion-icon name="notifications" @click="goTo('/notifications')"></ion-icon>
+          <div class="notif-icon-wrapper">
+              <router-link to="/notifications">
+                <ion-icon name="notifications" @click="goTo('/notifications')"></ion-icon>
+                <span v-if="unreadCount > 0" class="badge-footer">{{ unreadCount }}</span>
+              </router-link>
+            </div>
           <ion-icon name="person" class="active" @click="goTo('/profile')"></ion-icon>
         </div>
         <ion-text><small>&copy; All Rights Reserved PPG 2025.</small></ion-text>
@@ -104,6 +107,7 @@ import { ref, onMounted, computed } from 'vue';
 import axios from 'axios';
 import Swal from 'sweetalert2';
 
+// --- Student Data ---
 const student = ref({
   first_name: '',
   middle_name: '',
@@ -139,6 +143,7 @@ const courseSection = computed(() => {
   return `${getCourseName(student.value.course_id)} ${getYearLabel(student.value.year_id)} ${getSectionName(student.value.section_id)}`.toUpperCase();
 });
 
+// --- Fetch Lists ---
 const fetchYearLevels = async () => {
   try {
     const res = await axios.get('http://localhost:5000/api/year-level/list');
@@ -164,7 +169,84 @@ const fetchSections = async () => {
   }
 };
 
-// Check session and fetch student
+// --- Notifications ---
+interface Notification {
+  id: number;
+  title: string;
+  message: string;
+  created_at: string;
+  read: boolean;
+  label?: string;
+}
+
+const notifications = ref<Notification[]>([]);
+const unreadCount = ref(0);
+const studentId = ref<number>(0);
+const studentCourseId = ref<number>(0);
+
+const getNotificationLabel = (createdAt: string) => {
+  const notifDate = new Date(createdAt);
+  const today = new Date();
+  const yesterday = new Date(today);
+  yesterday.setDate(today.getDate() - 1);
+
+  if (
+    notifDate.getFullYear() === today.getFullYear() &&
+    notifDate.getMonth() === today.getMonth() &&
+    notifDate.getDate() === today.getDate()
+  ) {
+    return 'Today';
+  } else if (
+    notifDate.getFullYear() === yesterday.getFullYear() &&
+    notifDate.getMonth() === yesterday.getMonth() &&
+    notifDate.getDate() === yesterday.getDate()
+  ) {
+    return 'Yesterday';
+  } else {
+    return notifDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+  }
+};
+
+const fetchNotifications = async () => {
+  if (!studentId.value) return;
+
+  try {
+    const res = await axios.get('http://localhost:5000/api/notifications/list', {
+      params: { student_id: studentId.value },
+    });
+
+    const filtered = (res.data || []).filter((notif: any) => {
+      const selectedStudents = Array.isArray(notif.selected_students)
+        ? notif.selected_students
+        : JSON.parse(notif.selected_students || '[]');
+
+      const selectedCourses = Array.isArray(notif.selected_courses)
+        ? notif.selected_courses
+        : JSON.parse(notif.selected_courses || '[]');
+
+      return (
+        notif.recipient_mode === 'all' ||
+        selectedStudents.includes(studentId.value) ||
+        selectedCourses.includes(studentCourseId.value)
+      );
+    });
+
+    notifications.value = filtered.map((notif: any) => ({
+      id: notif.id,
+      title: notif.notif_type,
+      message: notif.notif_message,
+      created_at: notif.created_at,
+      read: notif.read,
+      label: getNotificationLabel(notif.created_at),
+    }));
+
+    unreadCount.value = notifications.value.filter(n => !n.read).length;
+  } catch (err) {
+    console.error('Failed to fetch notifications:', err);
+  }
+};
+
+// --- Lifecycle ---
 onMounted(async () => {
   try {
     const res = await axios.get('http://localhost:5000/api/protected', { withCredentials: true });
@@ -173,16 +255,20 @@ onMounted(async () => {
       return;
     }
     student.value = res.data.student;
+    studentId.value = student.value.id;
+    studentCourseId.value = student.value.course_id;
   } catch (error) {
     console.error('Session fetch failed:', error);
     window.location.href = '/login';
   }
+
   await fetchCourses();
   await fetchSections();
   await fetchYearLevels();
+  await fetchNotifications();
 });
 
-// Fallback avatar
+// --- Fallback avatar ---
 const onImageError = (event: Event) => {
   const target = event.target as HTMLImageElement;
   target.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(
@@ -190,7 +276,7 @@ const onImageError = (event: Event) => {
   )}&background=ffffff&color=08055e&bold=true&size=128`;
 };
 
-// Navigate
+// --- Navigation & Logout ---
 const goTo = (path: string) => {
   window.location.href = path;
 };
@@ -203,10 +289,6 @@ const logout = async () => {
     showCancelButton: true,
     confirmButtonText: 'Yes, logout!',
     cancelButtonText: 'Cancel',
-    didOpen: () => {
-      document.body.classList.remove('swal2-height-auto');
-      document.documentElement.classList.remove('swal2-height-auto');
-    }
   });
 
   if (result.isConfirmed) {
@@ -221,10 +303,6 @@ const logout = async () => {
         title: 'Logged out',
         text: 'You have been logged out from all devices.',
         icon: 'success',
-        didOpen: () => {
-          document.body.classList.remove('swal2-height-auto');
-          document.documentElement.classList.remove('swal2-height-auto');
-        }
       });
 
       window.location.href = '/login';
@@ -234,16 +312,12 @@ const logout = async () => {
         title: 'Error',
         text: 'Logout failed. Please try again.',
         icon: 'error',
-        didOpen: () => {
-          document.body.classList.remove('swal2-height-auto');
-          document.documentElement.classList.remove('swal2-height-auto');
-        }
       });
     }
   }
 };
-
 </script>
+
 
 <style scoped>
 .ion-page {
@@ -351,6 +425,21 @@ ion-item ion-label {
   border-radius: 100%;
   width: 17px;
   height: 17px;
+}
+.notif-icon-wrapper {
+  position: relative;
+  display: inline-block;
+}
+
+.badge-footer {
+  position: absolute;
+  top: -5px;
+  right: -10px;
+  background-color: red;
+  color: white;
+  border-radius: 50%;
+  font-size: 12px;
+  padding: 2px 6px;
 }
 ion-icon.active {
   width: 24px;

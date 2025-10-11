@@ -66,10 +66,10 @@
                       <router-link to="/account-center" class="sidebar-link">Account Center</router-link>
                     </li>
                     <li>
-                        <router-link to="/adminLogIn" class="sidebar-link" @click="confirmLogout">
-                        Log Out
-                    </router-link>
-                    </li>
+                      <a href="javascript:void(0);" class="sidebar-link" @click="confirmLogout">
+                          Log Out
+                      </a>
+                  </li>
                 </ul>
             </div>
         <div class="main-content">
@@ -104,83 +104,120 @@ import {
   IonButton,
   IonContent,
   IonHeader,
-  IonIcon,
+  IonInput,
   IonPage,
   IonText,
-  IonToolbar
+  IonToolbar,
+  IonTitle,
+  IonItem,
+  IonLabel
 } from '@ionic/vue';
-import { notifications } from 'ionicons/icons';
-import Swal from 'sweetalert2';
-import { onMounted, ref } from 'vue';
+import { ref, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
+import axios from 'axios';
+import Swal from 'sweetalert2';
 
 const router = useRouter();
+const API_URL = 'http://localhost:5000/api/users/admin-login';
 
 const confirmLogout = async () => {
   const result = await Swal.fire({
     title: 'Are you sure?',
-    text: 'You will be logged out and redirected to the login page.',
+    text: 'You will be logged out.',
     icon: 'warning',
     showCancelButton: true,
-    confirmButtonColor: '#3085d6',
-    cancelButtonColor: '#d33',
-    confirmButtonText: 'Yes, log me out!', 
+    confirmButtonText: 'Yes, log me out!',
     didOpen: () => {
-          document.body.classList.remove("swal2-height-auto");
-          document.documentElement.classList.remove("swal2-height-auto");
-        }
+      document.body.classList.remove('swal2-height-auto');
+      document.documentElement.classList.remove('swal2-height-auto');
+    },
   });
 
   if (result.isConfirmed) {
-    router.push('/login');
+    try {
+      await axios.post('http://localhost:5000/api/users/admin-logout', {}, { withCredentials: true });
+      router.push('/adminLogIn'); // redirect to login page
+    } catch (err) {
+      console.error(err);
+      Swal.fire({
+        icon: 'error',
+        title: 'Error',
+        text: 'Logout failed',
+        didOpen: () => {
+          document.body.classList.remove('swal2-height-auto');
+          document.documentElement.classList.remove('swal2-height-auto');
+        }
+      });
+    }
   }
 };
 
-const showStudentMenu = ref(false);
-const showAcadMenu = ref(false);
-const showEventMenu = ref(false);
-
-const toggleStudentMenu = () => showStudentMenu.value = !showStudentMenu.value;
-const toggleAcadMenu = () => showAcadMenu.value = !showAcadMenu.value;
-const toggleEventMenu = () => showEventMenu.value = !showEventMenu.value;
+const email = ref('');
+const password = ref('');
 
 const currentTime = ref('');
 const currentDate = ref('');
 
+
 const updateDateTime = () => {
   const now = new Date();
-
-  const days = ['SUN', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT'];
-  const months = [
-    'JANUARY', 'FEBRUARY', 'MARCH', 'APRIL', 'MAY', 'JUNE',
-    'JULY', 'AUGUST', 'SEPTEMBER', 'OCTOBER', 'NOVEMBER', 'DECEMBER'
-  ];
-
-  const day = days[now.getDay()];
-  const hours = now.getHours();
-  const minutes = now.getMinutes();
-  const seconds = now.getSeconds();
-  const ampm = hours >= 12 ? 'PM' : 'AM';
-
-  const formattedHours = ((hours + 11) % 12 + 1).toString().padStart(2, '0');
-  const formattedMinutes = minutes.toString().padStart(2, '0');
-  const formattedSeconds = seconds.toString().padStart(2, '0');
-
-  currentTime.value = `${day}, ${formattedHours}:${formattedMinutes}:${formattedSeconds} ${ampm}`;
-
-  const date = now.getDate();
-  const month = months[now.getMonth()];
-  const year = now.getFullYear();
-
-  currentDate.value = `${month} ${date}, ${year}`;
+  currentTime.value = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+  currentDate.value = now.toLocaleDateString([], { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
 };
 
-onMounted(() => {
-  updateDateTime();
-  setInterval(updateDateTime, 1000);
+updateDateTime();
+
+setInterval(updateDateTime, 1000);
+
+onMounted(async () => {
+  try {
+    const res = await axios.get('http://localhost:5000/api/check-admin-session', {
+      withCredentials: true
+    });
+
+    if (res.data.loggedIn) {
+      router.replace('/dashboard');
+    } else {
+      router.replace('/adminLogIn'); // redirect if not logged in
+    }
+
+  } catch (err) {
+    console.error('Session check failed:', err);
+    router.replace('/adminLogIn');
+  }
 });
 
+const logIn = async () => {
+  if (!email.value || !password.value) {
+    Swal.fire({
+      icon: 'error',
+      title: 'Missing Fields',
+      text: 'Please enter both email and password.',
+      didOpen: () => {
+        document.body.classList.remove("swal2-height-auto");
+        document.documentElement.classList.remove("swal2-height-auto");
+      }
+    });
+    return;
+  }
+
+  try {
+    const res = await axios.post(API_URL, { email: email.value, password: password.value }, { withCredentials: true });
+    router.push('/dashboard'); // Redirect after successful login
+  } catch (err: any) {
+    Swal.fire({
+      icon: 'error',
+      title: 'Login Failed',
+      text: err.response?.data?.message || 'Invalid credentials',
+      didOpen: () => {
+        document.body.classList.remove("swal2-height-auto");
+        document.documentElement.classList.remove("swal2-height-auto");
+      }
+    });
+  }
+};
 </script>
+
 
 <style scoped>
 .toolbar-container::part(backdrop) {

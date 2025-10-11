@@ -2,11 +2,9 @@
   <ion-page>
     <ion-header>
       <ion-toolbar>
-        <ion-title>
           <div class="logo">
             <img src="../../public/img/cpclogo.jpg" alt="CPC Logo" />
           </div>
-        </ion-title>
       </ion-toolbar>
     </ion-header>
 
@@ -63,169 +61,391 @@
 </template>
 
 <script setup>
-import { ref, nextTick, onBeforeUnmount, onMounted } from 'vue';
-import * as faceapi from 'face-api.js';
+import { ref, onMounted, onBeforeUnmount, nextTick } from 'vue';
 import Swal from 'sweetalert2';
-import axios from 'axios';
+import * as faceapi from 'face-api.js';
 
-const step = ref(1);
+// ----- student info -----
+const student = JSON.parse(localStorage.getItem('student')) || {};
+const studentId = student?.student_id || localStorage.getItem('student_id') || null;
+const eventId = localStorage.getItem('eventId'); // Make sure eventId is set in localStorage
+
+// ----- refs -----
 const video = ref(null);
-const canvas = ref(null);
-const capturedImage = ref(null);
-const faceDescriptor = ref(null);
-const progress = ref(0);
-let stream = null;
-let detectInterval = null;
-const progressSpeed = 0.5;
-const alreadyRegistered = ref(false);
+const overlayCanvas = ref(null);
+const progressCanvas = ref(null);
+const frameWrapper = ref(null);
 
-// Check if user already has a face registered
-const checkFaceRegistration = async () => {
-  try {
-    const res = await axios.get('http://localhost:5000/api/face/check', {
-      withCredentials: true,
-    });
-    alreadyRegistered.value = res.data.registered || false;
-  } catch (err) {
-    console.error('Failed to check face registration:', err);
+// ----- state -----
+let stream = null;
+let rafId = null;
+let detectLoopRunning = false;
+let neutralVerticalRatio = 0;
+
+const step = ref('start'); // 'start' | 'running' | 'verified' | 'failed'
+const sequence = ref([]);
+const actionIndex = ref(0);
+const promptText = ref('');
+const actionMaxDuration = 3000; // 3 seconds
+let actionPerformed = false;
+
+// ----- actions -----
+const ACTIONS = ['smile', 'turn_left', 'turn_right', 'tilt_up'];
+
+// ----- helpers -----
+const buildRandomSequence = (n = 3) => {
+  const seq = [];
+  while (seq.length < n) {
+    const a = ACTIONS[Math.floor(Math.random() * ACTIONS.length)];
+    if (seq.length === 0 || seq[seq.length - 1] !== a) seq.push(a);
   }
+  return seq;
 };
 
-const startCamera = async () => {
-  step.value = 2;
-  await nextTick();
+const mouthRatio = (mouth) => {
+  const width = Math.hypot(mouth[6].x - mouth[0].x, mouth[6].y - mouth[0].y);
+  const height = Math.hypot(mouth[3].x - mouth[9].x, mouth[3].y - mouth[9].y);
+  return height / width;
+};
 
-  await Promise.all([
-    faceapi.nets.tinyFaceDetector.loadFromUri('/models'),
-    faceapi.nets.faceLandmark68Net.loadFromUri('/models'),
-    faceapi.nets.faceRecognitionNet.loadFromUri('/models'),
-  ]);
+const estimateHeadYaw = (landmarks) => {
+  const nose = landmarks.getNose();
+  const leftEye = landmarks.getLeftEye();
+  const rightEye = landmarks.getRightEye();
+  const noseCenter = { x: nose.reduce((s, p) => s + p.x, 0) / nose.length, y: nose.reduce((s, p) => s + p.y, 0) / nose.length };
+  const leftCenter = { x: leftEye.reduce((s, p) => s + p.x, 0) / leftEye.length, y: leftEye.reduce((s, p) => s + p.y, 0) / leftEye.length };
+  const rightCenter = { x: rightEye.reduce((s, p) => s + p.x, 0) / rightEye.length, y: rightEye.reduce((s, p) => s + p.y, 0) / rightEye.length };
+  const distLeft = Math.hypot(noseCenter.x - leftCenter.x, noseCenter.y - leftCenter.y);
+  const distRight = Math.hypot(noseCenter.x - rightCenter.x, noseCenter.y - rightCenter.y);
+  return (distLeft - distRight) / (distLeft + distRight);
+};
 
-  stream = await navigator.mediaDevices.getUserMedia({ video: true });
-  video.value.srcObject = stream;
+const drawBox = (ctx, box, color = '#00C6FF') => {
+  ctx.strokeStyle = color;
+  ctx.lineWidth = 2;
+  ctx.strokeRect(box.x, box.y, box.width, box.height);
+};
 
-  detectInterval = setInterval(async () => {
-    if (!video.value || video.value.readyState !== 4) return;
+const clearOverlay = (ctx) => ctx.clearRect(0, 0, overlayCanvas.value.width, overlayCanvas.value.height);
 
-    const detection = await faceapi
-      .detectSingleFace(video.value, new faceapi.TinyFaceDetectorOptions())
-      .withFaceLandmarks()
-      .withFaceDescriptor();
+const drawProgressRing = (pct) => {
+  const canvas = progressCanvas.value;
+  const wrapper = frameWrapper.value;
+  const size = Math.min(wrapper.clientWidth, wrapper.clientHeight);
+  const dpr = window.devicePixelRatio || 1;
+  canvas.width = size * dpr;
+  canvas.height = size * dpr;
+  canvas.style.width = size + 'px';
+  canvas.style.height = size + 'px';
+  const ctx = canvas.getContext('2d');
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  const radius = (size / 2) - 12;
+  const centerX = size / 2;
+  const centerY = size / 2;
+  ctx.clearRect(0, 0, size, size);
 
-    if (!canvas.value) return;
-    const ctx = canvas.value.getContext('2d');
-    canvas.value.width = video.value.videoWidth;
-    canvas.value.height = video.value.videoHeight;
-    ctx.clearRect(0, 0, canvas.value.width, canvas.value.height);
+  ctx.beginPath();
+  ctx.arc(centerX, centerY, radius, 0, Math.PI * 2);
+  ctx.strokeStyle = '#333';
+  ctx.lineWidth = 8;
+  ctx.stroke();
 
-    const cx = canvas.value.width / 2;
-    const cy = canvas.value.height / 2;
-    const radius = Math.min(cx, cy) / 2;
+  const end = (-Math.PI / 2) + (Math.PI * 2 * (pct / 100));
+  ctx.beginPath();
+  ctx.arc(centerX, centerY, radius, -Math.PI / 2, end, false);
+  ctx.strokeStyle = '#00C6FF';
+  ctx.lineWidth = 8;
+  ctx.lineCap = 'round';
+  ctx.stroke();
+};
 
-    // Circle overlay
-    ctx.fillStyle = 'rgba(0,0,0,0.2)';
-    ctx.beginPath();
-    ctx.arc(cx, cy, radius, 0, 2 * Math.PI);
-    ctx.fill();
+const humanizeAction = (a) => {
+  if (a === 'smile') return 'smile 😊';
+  if (a === 'turn_left') return 'turn your head left';
+  if (a === 'turn_right') return 'turn your head right';
+  if (a === 'tilt_up') return 'look up';
+  return a;
+};
 
-    ctx.strokeStyle = '#2196f3';
-    ctx.lineWidth = 3;
-    ctx.beginPath();
-    ctx.arc(cx, cy, radius + 5, 0, 2 * Math.PI);
-    ctx.stroke();
+// ----- detection loop -----
+const startDetection = async () => {
+  if (detectLoopRunning) return;
+  detectLoopRunning = true;
+  const overlayCtx = overlayCanvas.value.getContext('2d');
+  overlayCanvas.value.width = video.value.videoWidth;
+  overlayCanvas.value.height = video.value.videoHeight;
+  drawProgressRing(0);
 
-    // Progress ring
-    ctx.strokeStyle = '#4caf50';
-    ctx.lineWidth = 6;
-    ctx.beginPath();
-    ctx.arc(
-      cx,
-      cy,
-      radius + 10,
-      -Math.PI / 2,
-      -Math.PI / 2 + (2 * Math.PI * (progress.value / 100))
-    );
-    ctx.stroke();
+  const tinyOptions = new faceapi.TinyFaceDetectorOptions({ inputSize: 320, scoreThreshold: 0.5 });
+
+  // Capture neutral vertical ratio
+  const captureNeutral = async () => {
+    const detection = await faceapi.detectSingleFace(video.value, tinyOptions).withFaceLandmarks();
+    if (detection) {
+      const nose = detection.landmarks.getNose();
+      const eyes = [...detection.landmarks.getLeftEye(), ...detection.landmarks.getRightEye()];
+      const noseY = nose.reduce((s, p) => s + p.y, 0) / nose.length;
+      const eyesY = eyes.reduce((s, p) => s + p.y, 0) / eyes.length;
+      neutralVerticalRatio = (noseY - eyesY) / overlayCanvas.value.height;
+    } else {
+      setTimeout(captureNeutral, 100);
+    }
+  };
+  await captureNeutral();
+
+  const currentAction = sequence.value[actionIndex.value];
+  let startTime = Date.now();
+  actionPerformed = false;
+
+  const loop = async () => {
+    if (!video.value || video.value.paused || video.value.ended) {
+      rafId = requestAnimationFrame(loop);
+      return;
+    }
+
+    const detection = await faceapi.detectSingleFace(video.value, tinyOptions).withFaceLandmarks();
+    clearOverlay(overlayCtx);
+
+    let detected = false;
 
     if (detection) {
-      faceDescriptor.value = Array.from(detection.descriptor);
-      const box = detection.detection.box;
-      const faceX = box.x + box.width / 2;
-      const faceY = box.y + box.height / 2;
-      const dx = faceX - cx;
-      const dy = faceY - cy;
-      const distance = Math.sqrt(dx * dx + dy * dy);
+      const landmarks = detection.landmarks;
+      const nose = landmarks.getNose();
+      const eyes = [...landmarks.getLeftEye(), ...landmarks.getRightEye()];
+      const noseY = nose.reduce((s, p) => s + p.y, 0) / nose.length;
+      const eyesY = eyes.reduce((s, p) => s + p.y, 0) / eyes.length;
+      const verticalRatio = (noseY - eyesY) / overlayCanvas.value.height;
+      const lookUpThreshold = neutralVerticalRatio - 0.03;
 
-      if (distance < radius * 0.8) {
-        progress.value = Math.min(100, progress.value + progressSpeed);
-      } else {
-        progress.value = Math.max(0, progress.value - progressSpeed * 0.5);
-      }
+      if (currentAction === 'smile' && mouthRatio(landmarks.getMouth()) > 0.25) detected = true;
+      else if (currentAction === 'turn_left' && estimateHeadYaw(landmarks) < -0.12) detected = true;
+      else if (currentAction === 'turn_right' && estimateHeadYaw(landmarks) > 0.12) detected = true;
+      else if (currentAction === 'tilt_up' && verticalRatio < lookUpThreshold) detected = true;
 
-      ctx.strokeStyle = '#0f0';
-      ctx.lineWidth = 2;
-      ctx.strokeRect(box.x, box.y, box.width, box.height);
-
-      if (progress.value >= 100) {
-        clearInterval(detectInterval);
-        await autoCapture();
-      }
-    } else {
-      progress.value = Math.max(0, progress.value - progressSpeed * 0.5);
+      drawBox(overlayCtx, detection.detection.box, detected ? '#00FF00' : '#FF4444');
     }
-  }, 100);
+
+    const elapsed = Date.now() - startTime;
+    drawProgressRing(Math.min(100, (elapsed / actionMaxDuration) * 100));
+
+    if (detected && !actionPerformed) {
+      // Action completed
+      actionPerformed = true;
+      actionIndex.value++;
+      detectLoopRunning = false;
+
+      if (actionIndex.value >= sequence.value.length) {
+        // All actions done
+        await performFinalCaptureAndVerify();
+        return;
+      } else {
+        // Next action
+        promptText.value = humanizeAction(sequence.value[actionIndex.value]);
+        setTimeout(() => startDetection(), 200);
+        return;
+      }
+    }
+
+    if (elapsed >= actionMaxDuration) {
+      detectLoopRunning = false;
+
+      if (!actionPerformed) {
+        // Action failed, new sequence
+        await Swal.fire({
+          title: 'Action Failed ❌',
+          text: `You did not complete: ${humanizeAction(currentAction)}\nPlease try a new sequence`,
+          icon: 'warning',
+          didOpen: () => {
+            document.body.classList.remove('swal2-height-auto');
+            document.documentElement.classList.remove('swal2-height-auto');
+          }
+        });
+
+        sequence.value = buildRandomSequence(3);
+        actionIndex.value = 0;
+        promptText.value = humanizeAction(sequence.value[0]);
+        setTimeout(() => startDetection(), 200);
+        return;
+      } else {
+        // proceed to next action
+        actionIndex.value++;
+        if (actionIndex.value >= sequence.value.length) {
+          await performFinalCaptureAndVerify();
+          return;
+        } else {
+          promptText.value = humanizeAction(sequence.value[actionIndex.value]);
+          actionPerformed = false;
+          startTime = Date.now();
+          setTimeout(() => startDetection(), 200);
+          return;
+        }
+      }
+    }
+
+    rafId = requestAnimationFrame(loop);
+  };
+
+  rafId = requestAnimationFrame(loop);
 };
 
-const autoCapture = async () => {
-  const ctx = canvas.value.getContext('2d');
-  ctx.drawImage(video.value, 0, 0, canvas.value.width, canvas.value.height);
-  capturedImage.value = canvas.value.toDataURL('image/png');
-  step.value = 3;
-};
+// ----- final capture & verify -----
+const performFinalCaptureAndVerify = async () => {
+  step.value = 'running';
+  const cap = document.createElement('canvas');
+  cap.width = video.value.videoWidth;
+  cap.height = video.value.videoHeight;
+  const cctx = cap.getContext('2d');
+  cctx.drawImage(video.value, 0, 0, cap.width, cap.height);
+  const imgBase64 = cap.toDataURL('image/jpeg', 0.9).split(',')[1];
 
-const saveFace = async () => {
-  if (!faceDescriptor.value) return;
+  drawProgressRing(0);
+  let pct = 0;
+  const stepMs = 30;
+  const increments = 1600 / stepMs;
+  const delta = 100 / increments;
 
-  await fetch('http://localhost:5000/api/face/register', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    credentials: 'include',
-    body: JSON.stringify({ descriptor: faceDescriptor.value }),
+  await new Promise(resolve => {
+    const timer = setInterval(() => {
+      pct += delta;
+      drawProgressRing(Math.min(100, pct));
+      if (pct >= 100) {
+        clearInterval(timer);
+        resolve();
+      }
+    }, stepMs);
   });
 
   Swal.fire({
-    icon: 'success',
-    title: 'Face Registered',
-    text: 'You can now verify your face.',
+    title: 'Verifying...',
+    html: 'Please wait while we check your face',
+    allowOutsideClick: false,
     didOpen: () => {
       document.body.classList.remove('swal2-height-auto');
       document.documentElement.classList.remove('swal2-height-auto');
     },
-    willClose: () => {
-      window.location.reload(); // <-- reload page after closing alert
-    }
   });
 
-  stopCamera();
-  step.value = 1;
-  progress.value = 0;
-  capturedImage.value = null;
+  try {
+    const res = await fetch('http://localhost:5000/api/face/verify', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ studentId, image_base64: imgBase64 })
+    });
+    const data = await res.json();
+
+    if (!res.verified) {
+      step.value = 'failed';
+      await Swal.fire({
+        title: 'Verification Failed ❌',
+        text: `Face did not match (distance: ${data.distance?.toFixed(3) || 'N/A'})`,
+        icon: 'error',
+        didOpen: () => {
+          document.body.classList.remove('swal2-height-auto');
+          document.documentElement.classList.remove('swal2-height-auto');
+        }
+      });
+      return;
+    }
+
+    // ✅ Attendance record
+    const apiBase = 'http://localhost:5000/api/attendance';
+    const apiUrl = `${apiBase}/${eventId}/timein`;
+
+    // Create attendance
+    const res1 = await fetch(apiBase, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
+      body: JSON.stringify({ studentId, eventId })
+    });
+    if (!res1.ok) {
+      const err1 = await res1.json();
+      throw new Error(err1.error || 'Failed to create attendance');
+    }
+
+    // Update attendance
+    const res2 = await fetch(apiUrl, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
+      body: JSON.stringify({ studentId, eventId })
+    });
+    const result2 = await res2.json();
+    if (!res2.ok) throw new Error(result2.error || 'Failed to record attendance');
+
+    step.value = 'verified';
+    await Swal.fire({
+      icon: 'success',
+      title: 'Verified ✅',
+      text: 'Attendance recorded successfully',
+      didOpen: () => {
+        document.body.classList.remove('swal2-height-auto');
+        document.documentElement.classList.remove('swal2-height-auto');
+      }
+    });
+
+    // redirect after success
+    window.location.href = `http://localhost:8100/event-attendance?event=${eventId}`;
+
+  } catch (err) {
+    step.value = 'failed';
+    await Swal.fire({
+      icon: 'error',
+      title: 'Error',
+      text: err.message,
+      didOpen: () => {
+        document.body.classList.remove('swal2-height-auto');
+        document.documentElement.classList.remove('swal2-height-auto');
+      }
+    });
+  } finally {
+    stopAll();
+  }
 };
 
-const retakeFace = () => {
-  step.value = 2;
-  progress.value = 0;
-  startCamera();
+// ----- start & stop -----
+const start = async () => {
+  actionIndex.value = 0;
+  actionPerformed = false;
+  step.value = 'start';
+  sequence.value = buildRandomSequence(3);
+  promptText.value = humanizeAction(sequence.value[0]);
+
+  await Promise.all([
+    faceapi.nets.tinyFaceDetector.loadFromUri('/models'),
+    faceapi.nets.faceLandmark68Net.loadFromUri('/models')
+  ]);
+
+  try {
+    stream = await navigator.mediaDevices.getUserMedia({ video: { width: 640, height: 480 } });
+    video.value.srcObject = stream;
+    await nextTick();
+    overlayCanvas.value.width = video.value.videoWidth;
+    overlayCanvas.value.height = video.value.videoHeight;
+    drawProgressRing(0);
+    step.value = 'running';
+    setTimeout(() => startDetection(), 600);
+  } catch (err) {
+    await Swal.fire({ title: 'Camera Error', text: err.message, icon: 'error', didOpen: () => {
+      document.body.classList.remove('swal2-height-auto');
+      document.documentElement.classList.remove('swal2-height-auto');
+    }});
+  }
 };
 
-const stopCamera = () => {
-  if (stream) stream.getTracks().forEach((t) => t.stop());
-  if (detectInterval) clearInterval(detectInterval);
+const stopAll = () => {
+  detectLoopRunning = false;
+  if (rafId) cancelAnimationFrame(rafId);
+  if (stream) {
+    stream.getTracks().forEach(t => t.stop());
+    stream = null;
+  }
 };
 
-onBeforeUnmount(() => stopCamera());
-onMounted(() => checkFaceRegistration());
+onMounted(() => start());
+onBeforeUnmount(() => stopAll());
 </script>
+
 
 <style scoped>
 #container {

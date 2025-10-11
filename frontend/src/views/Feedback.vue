@@ -63,10 +63,10 @@
               <router-link to="/Update" class="sidebar-link">Featured Updates</router-link>
             </li>
             <li><router-link to="/account-center" class="sidebar-link">Account Center</router-link></li>
-            <li>
-              <router-link to="/adminLogIn" class="sidebar-link" @click="confirmLogout">
-                Log Out
-              </router-link>
+             <li>
+                <a href="javascript:void(0);" class="sidebar-link" @click="confirmLogout">
+                    Log Out
+                </a>
             </li>
           </ul>
         </div>
@@ -175,45 +175,12 @@
 </template>
 
 <script setup lang="ts">
-import {
-  IonButton,
-  IonCol,
-  IonContent,
-  IonHeader,
-  IonIcon,
-  IonPage,
-  IonRow,
-  IonSearchbar,
-  IonText,
-  IonToolbar
-} from '@ionic/vue';
-import { notifications } from 'ionicons/icons';
-import Swal from 'sweetalert2';
-import { computed, ref } from 'vue';
+import { ref, computed, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
+import Swal from 'sweetalert2';
+import axios from 'axios';
 
 const router = useRouter();
-
-// Logout Confirmation
-const confirmLogout = async () => {
-  const result = await Swal.fire({
-    title: 'Are you sure?',
-    text: 'You will be logged out and redirected to the login page.',
-    icon: 'warning',
-    showCancelButton: true,
-    confirmButtonColor: '#3085d6',
-    cancelButtonColor: '#d33',
-    confirmButtonText: 'Yes, log me out!',
-    didOpen: () => {
-          document.body.classList.remove("swal2-height-auto");
-          document.documentElement.classList.remove("swal2-height-auto");
-        }
-  });
-
-  if (result.isConfirmed) {
-    router.push('/login');
-  }
-};
 
 // Sidebar Toggle States
 const showStudentMenu = ref(false);
@@ -224,36 +191,89 @@ const toggleStudentMenu = () => showStudentMenu.value = !showStudentMenu.value;
 const toggleAcadMenu = () => showAcadMenu.value = !showAcadMenu.value;
 const toggleEventMenu = () => showEventMenu.value = !showEventMenu.value;
 
-// State for sorting and pagination
+// Logout Confirmation
+const confirmLogout = async () => {
+  const result = await Swal.fire({
+    title: 'Are you sure?',
+    text: 'You will be logged out.',
+    icon: 'warning',
+    showCancelButton: true,
+    confirmButtonText: 'Yes, log me out!',
+    didOpen: () => {
+      document.body.classList.remove('swal2-height-auto');
+      document.documentElement.classList.remove('swal2-height-auto');
+    },
+  });
+
+  if (result.isConfirmed) {
+    try {
+      await axios.post('http://localhost:5000/api/users/admin-logout', {}, { withCredentials: true });
+      router.push('/adminLogIn'); // redirect to login page
+    } catch (err) {
+      console.error(err);
+      Swal.fire({
+        icon: 'error',
+        title: 'Error',
+        text: 'Logout failed',
+        didOpen: () => {
+          document.body.classList.remove('swal2-height-auto');
+          document.documentElement.classList.remove('swal2-height-auto');
+        }
+      });
+    }
+  }
+};
+
+// Table State
+const feedbacks = ref([]);
 const sortColumn = ref('');
 const sortOrder = ref<'asc' | 'desc'>('asc');
 const searchQuery = ref('');
 const currentPage = ref(1);
 const itemsPerPage = 10;
 
-function goToFeedbackDetails(eventID: string | number) {
-  router.push(`/feedback-details/${eventID}`);
-}
+// Fetch feedback from API
+const fetchFeedbacks = async () => {
+  try {
+    const response = await axios.get('http://localhost:5000/api/feedback/');
+    console.log('API response:', response.data); // <--- ADD THIS
+    const data = response.data;
 
-// Data
-const feedbacks = ref([
-  {
-    eventID: 1,
-    eventName: 'Leadership Seminar',
-    dateTime: '2025-06-10 09:00 AM',
-    totalFeedbacks: 50,
-    eventStats: 'Completed'
-  },
-  {
-    eventID: 2,
-    eventName: 'Career Orientation',
-    dateTime: '2025-06-12 01:00 PM',
-    totalFeedbacks: 35,
-    eventStats: 'Completed'
+   feedbacks.value = data.feedbackList.map((f: any) => {
+        const now = new Date();
+        const start = new Date(f.start_date_time);
+        const end = new Date(f.end_date_time);
+
+        let eventStatus = '';
+        if (now < start) {
+          eventStatus = 'Upcoming';
+        } else if (now >= start && now <= end) {
+          eventStatus = 'Ongoing';
+        } else {
+          eventStatus = 'Completed';
+        }
+
+        return {
+          eventID: f.event_id,                // use event_id
+          eventName: f.event_name,
+          dateTime: new Date(f.created_at).toLocaleString(),
+          totalFeedbacks: f.total_feedback_for_event,
+          eventStats: eventStatus             // dynamically calculated
+        };
+      });
+    console.log('Mapped feedbacks:', feedbacks.value); // <--- ADD THIS
+  } catch (error) {
+    console.error('Failed to fetch feedback:', error);
+    Swal.fire('Error', 'Failed to fetch feedback', 'error');
   }
-]);
+};
 
-// Sorting logic
+// Fetch data on mount
+onMounted(() => {
+  fetchFeedbacks();
+});
+
+// Sorting function
 function sortData(column: string) {
   if (sortColumn.value === column) {
     sortOrder.value = sortOrder.value === 'asc' ? 'desc' : 'asc';
@@ -264,7 +284,7 @@ function sortData(column: string) {
   currentPage.value = 1;
 }
 
-// Feedback table filtering and pagination
+// Filtered feedbacks based on search & sort
 const filteredFeedbacks = computed(() => {
   let data = [...feedbacks.value];
   const query = searchQuery.value.toLowerCase();
@@ -291,6 +311,7 @@ const filteredFeedbacks = computed(() => {
   return data;
 });
 
+// Paginated feedbacks
 const paginatedFeedbacks = computed(() => {
   const start = (currentPage.value - 1) * itemsPerPage;
   return filteredFeedbacks.value.slice(start, start + itemsPerPage);
@@ -299,8 +320,12 @@ const paginatedFeedbacks = computed(() => {
 const totalPages = computed(() => {
   return Math.ceil(filteredFeedbacks.value.length / itemsPerPage);
 });
-</script>
 
+// Navigate to feedback details
+function goToFeedbackDetails(eventID: string | number) {
+ window.location.href = `/feedback-details/${eventID}`;
+}
+</script>
 
 <style scoped>
 .toolbar-container::part(backdrop) {

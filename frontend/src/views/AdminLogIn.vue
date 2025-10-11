@@ -1,45 +1,149 @@
 <template>
-    <ion-page>
-        <ion-header>
-            <ion-toolbar>
-                <ion-title>
-                    <div class="admin-logo">
-                        <img src="../../public/img/cpclogo.jpg" alt="CPC Logo" />
-                    </div>
-                </ion-title>
-            </ion-toolbar>
-        </ion-header>
-        <ion-content class="ad-background">
-        <div class="container">
+  <ion-page>
+    <ion-header>
+      <ion-toolbar>
+        <ion-title>
+          <div class="admin-logo">
+            <img src="../../public/img/cpclogo.jpg" alt="CPC Logo" />
+          </div>
+        </ion-title>
+      </ion-toolbar>
+    </ion-header>
+
+    <ion-content class="ad-background">
+      <div class="container">
+        <div class="form">
             <h1 class="adminLogIn-title">LOG IN</h1>
-                <form @submit.prevent="logIn">
-                    <div class="ad-user-icon">
-                        <img src="../../public/img/user-icon.png" alt="user-icon">
-                    </div>
-                    <ion-item>
-                        <ion-label position="stacked">Username:</ion-label>
-                        <ion-input v-model="username" type="text" required></ion-input>
-                    </ion-item>
 
-                    <ion-item>
-                        <ion-label position="stacked">Password:</ion-label>
-                        <ion-input v-model="password" type="text" required></ion-input>
-                    </ion-item>
-
-                    <ion-button expand="block" type="submit" class="adLogInbtn">Log In</ion-button>
-                </form>
-        </div>
-            <div class="footer">
-                <ion-text>
-                    <small>&copy; All Rights Reserved PPG 2025.</small>
-                </ion-text>
+            <div class="ad-user-icon">
+            <img src="../../public/img/user-icon.png" alt="user-icon">
             </div>
-    </ion-content>   
-    </ion-page>
+
+            <ion-item>
+            <ion-label position="stacked">Email:</ion-label>
+            <ion-input
+                :value="email"
+                type="text"
+                required
+                @ionChange="email = $event.detail.value"
+            ></ion-input>
+            </ion-item>
+
+            <ion-item>
+            <ion-label position="stacked">Password:</ion-label>
+            <ion-input
+                :value="password"
+                type="password"
+                required
+                @ionChange="password = $event.detail.value"
+            ></ion-input>
+            </ion-item>
+
+            <ion-button expand="block" class="adLogInbtn" @click="logIn">
+            Log In
+            </ion-button>
+        </div>
+      </div>
+
+      <div class="footer">
+        <ion-text>
+          <small>&copy; All Rights Reserved PPG 2025.</small>
+        </ion-text>
+      </div>
+    </ion-content>
+  </ion-page>
 </template>
 
 <script setup lang="ts">
-import { IonContent, IonHeader, IonPage, IonTitle, IonToolbar } from '@ionic/vue';
+import {
+  IonButton,
+  IonContent,
+  IonHeader,
+  IonInput,
+  IonPage,
+  IonText,
+  IonToolbar,
+  IonTitle
+} from '@ionic/vue';
+import { ref, onMounted } from 'vue';
+import { useRouter } from 'vue-router';
+import axios from 'axios';
+import Swal from 'sweetalert2';
+
+const router = useRouter();
+const API_URL = 'http://localhost:5000/api/users/admin-login';
+
+const email = ref('');
+const password = ref('');
+
+const logIn = async () => {
+  if (!email.value || !password.value) {
+    Swal.fire({
+      icon: 'error',
+      title: 'Missing Fields',
+      text: 'Please enter both email and password.',
+      didOpen: () => {
+        document.body.classList.remove("swal2-height-auto");
+        document.documentElement.classList.remove("swal2-height-auto");
+      }
+    });
+    return;
+  }
+
+  try {
+    const res = await axios.post(API_URL,
+     {
+      email: email.value,
+      password: password.value
+    },
+    { withCredentials: true }
+    );
+
+    const user = res.data.user;
+
+    if (user.status !== 0 && user.status !== 2) {
+      Swal.fire({
+        icon: 'error',
+        title: 'Account Inactive',
+        text: 'Your admin account is deactivated.',
+        didOpen: () => {
+          document.body.classList.remove("swal2-height-auto");
+          document.documentElement.classList.remove("swal2-height-auto");
+        }
+      });
+      return;
+    }
+
+    sessionStorage.setItem('adminUser', JSON.stringify(user));
+    sessionStorage.setItem('token', res.data.token);
+
+    router.push('/dashboard');
+
+  } catch (err: any) {
+    Swal.fire({
+      icon: 'error',
+      title: 'Login Failed',
+      text: err.response?.data?.message || 'Invalid credentials',
+      didOpen: () => {
+        document.body.classList.remove("swal2-height-auto");
+        document.documentElement.classList.remove("swal2-height-auto");
+      }
+    });
+  }
+};
+const checkSession = async () => {
+  try {
+    const res = await axios.get('http://localhost:5000/api/check-admin-session', { withCredentials: true });
+    if (res.data.loggedIn) {
+      router.replace('/dashboard');
+    }
+  } catch (err) {
+    router.push('/adminLogIn');
+  }
+};
+onMounted(() => {
+  checkSession();
+});
 </script>
 
 <style scoped>
@@ -66,8 +170,13 @@ ion-button::part(native){
     margin-top: 20px;
     margin-bottom: 0;
 }
-
-.container form {
+.container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100%;
+}
+.container .form {
     display: block;
     width: 450px;
     opacity: 0.85;
@@ -139,5 +248,18 @@ ion-input {
     font-size: 30px;
     font-weight: 600;
     font-family: 'Hind Kochi', sans-serif !important;
+}
+.footer {
+    background-color: #07055D;
+    color: #fff;
+    height: 50px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-size: 20px;
+    border-top: 5px solid;
+    position: fixed;
+    width: 100%;
+    bottom: 0;
 }
 </style>

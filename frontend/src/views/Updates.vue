@@ -16,9 +16,7 @@
           <router-link to="/dashboard" class="sidebar-title">Dashboard</router-link>
           <ul>
             <li>
-              <div class="sidebar-link" @click="toggleStudentMenu">
-                Student Management
-              </div>
+              <div class="sidebar-link" @click="toggleStudentMenu">Student Management</div>
               <ul v-show="showStudentMenu">
                 <li><router-link to="/register" class="sub">Register Student</router-link></li>
                 <li><router-link to="/view" class="sub">View & Manage Students</router-link></li>
@@ -27,9 +25,7 @@
               </ul>
             </li>
             <li>
-              <div class="sidebar-link" @click="toggleAcadMenu">
-                Academic Curriculum
-              </div>
+              <div class="sidebar-link" @click="toggleAcadMenu">Academic Curriculum</div>
               <ul v-show="showAcadMenu">
                 <li><router-link to="/register-course" class="sub">Register Course</router-link></li>
                 <li><router-link to="/view-course" class="sub">View Courses</router-link></li>
@@ -40,9 +36,7 @@
               </ul>
             </li>
             <li>
-              <div class="sidebar-link" @click="toggleEventMenu">
-                Event Management
-              </div>
+              <div class="sidebar-link" @click="toggleEventMenu">Event Management</div>
               <ul v-show="showEventMenu">
                 <li><router-link to="/create" class="sub">Create Event</router-link></li>
                 <li><router-link to="/event-lists" class="sub">Event List</router-link></li>
@@ -50,138 +44,109 @@
                 <li><router-link to="/attendance-records" class="sub">View Attendance Records</router-link></li>
               </ul>
             </li>
-            <li>
-              <router-link to="/Request" class="sidebar-link">Request Management</router-link>
-            </li>
-            <li>
-              <router-link to="/Notif" class="sidebar-link">Notification Management</router-link>
-            </li>
-            <li>
-              <router-link to="/Feed" class="sidebar-link">Feedback Management</router-link>
-            </li>
-            <li>
-              <router-link to="/Update" class="sidebar-link">Featured Updates</router-link>
-            </li>
-            <li>
-              <router-link to="/account-center" class="sidebar-link">Account Center</router-link>
-            </li>
-            <li>
-              <router-link to="/adminLogIn" class="sidebar-link" @click="confirmLogout">
-                Log Out
-              </router-link>
+            <li><router-link to="/Request" class="sidebar-link">Request Management</router-link></li>
+            <li><router-link to="/Notif" class="sidebar-link">Notification Management</router-link></li>
+            <li><router-link to="/Feed" class="sidebar-link">Feedback Management</router-link></li>
+            <li><router-link to="/Update" class="sidebar-link">Featured Updates</router-link></li>
+            <li><router-link to="/account-center" class="sidebar-link">Account Center</router-link></li>
+             <li>
+                <a href="javascript:void(0);" class="sidebar-link" @click="confirmLogout">
+                    Log Out
+                </a>
             </li>
           </ul>
         </div>
 
         <div class="main-content">
-          <div class="event-overviews">
-            <h3>ANNOUNCEMENTS AND REMINDER'S OVERVIEW</h3>
-                <table class="event-table">
-                    <thead>
-                    <tr>
-                        <th>Total</th>
-                        <th>Active</th>
-                        <th>Inacive</th>
-                    </tr>
-                    </thead>
-                    <tbody>
-                    <tr>
-                        <td>{{ totalRA }}</td>
-                        <td>{{ activeRA }}</td>
-                        <td>{{ inactiveRA }}</td>
-                    </tr>
-                    </tbody>
-                </table>
-            </div>
-            <h4>LIST</h4>
-            <div style="display: flex; justify-content: flex-end; gap: 15px;margin-top: 5px; margin-bottom: 5px;">
-                    <ion-button
-                    style="--background: green; --color: white; font-weight: 700; --border-radius: 5px; width: 330px;">
-                        Add New 
-                    </ion-button>
-            </div>
-          <div style="--background: transparent;">
-            <ion-row class="ion-align-items-center ion-justify-content-between" style="margin-bottom: 10px;">
-              <ion-col size="7">
-              </ion-col>
-              <ion-col size="5">
-                <ion-searchbar
-                  v-model="searchQuery"
-                  class="white-searchbar"
-                  placeholder="Search..."
-                  animated
-                />
-              </ion-col>
-            </ion-row>
+          <h4>Reminders & Announcement List</h4>
+          <div style="display: flex; justify-content: flex-end; gap: 15px; margin-top: 5px; margin-bottom: 5px;">
+            <ion-button
+              style="--background: green; --color: white; font-weight: 700; --border-radius: 5px; width: 330px;"
+              @click="openAddModal">
+              Add New
+            </ion-button>
+          </div>
 
-            <div style="overflow-x: auto;">
-              <table style="width: 100%; border-collapse: collapse; font-size: 14px;">
-                <thead>
-                  <tr>
-                    <th style="cursor:pointer;" @click="sortData('ID')">
-                      ID
-                      <span v-if="sortColumn === 'ID'">{{ sortOrder === 'asc' ? '▲' : '▼' }}</span>
-                    </th>
-                    <th style="cursor:pointer;" @click="sortData('RAname')">
-                      Name
-                      <span v-if="sortColumn === 'RAname'">{{ sortOrder === 'asc' ? '▲' : '▼' }}</span>
-                    </th>
-                    <th style="cursor:pointer;" @click="sortData('RAdesc')">
-                      Description
-                      <span v-if="sortColumn === 'RAdesc'">{{ sortOrder === 'asc' ? '▲' : '▼' }}</span>
-                    </th>
-                    <th style="cursor:pointer;" @click="sortData('RAstats')">
-                      Status
-                      <span v-if="sortColumn === 'RAstats'">{{ sortOrder === 'asc' ? '▲' : '▼' }}</span>
-                    </th>
-                    <th>Actions</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <tr v-for="event in paginatedEvents" :key="event.eventID">
-                    <td>{{ event.ID }}</td>
-                    <td>{{ event.RAname }}</td>
-                    <td>{{ event.RAdesc }}</td>
-                    <td>{{ event.RAstats }}</td>
-                    <td>
-                      <ion-button size="small" fill="solid" style="--background: #F1C204;--color: black; --border-radius: 3px; font-weight: 600;" expand="block">Edit</ion-button>
-                      <ion-button size="small" fill="solid" style="--background: #970303;--color: white; --border-radius: 3px; font-weight: 600;" expand="block">Delete</ion-button>
-                      <ion-button size="small" fill="solid" style="--background: #026f02;--color: white; --border-radius: 3px; font-weight: 600;" expand="block">Activate</ion-button>
-                    </td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
-            <div class="pagination-container">
-              <button 
-                :disabled="currentPage === 1" 
-                @click="currentPage--"
-                class="pagination-button"
-                aria-label="Previous page"
-              >
-                &laquo; Prev
-              </button>
+          <div style="overflow-x: auto;">
+            <table style="width: 100%; border-collapse: collapse; font-size: 14px;">
+              <thead>
+                <tr>
+                  <th>Name</th>
+                  <th>Description</th>
+                  <th>Status</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+              <tr v-for="(update, index) in paginatedEvents" :key="update.update_id">
+                <td>{{ update.name }}</td>
+                <td>{{ update.description }}</td>
+                <td>{{ update.status || 'Inactive' }}</td>
+                <td>
+                  <ion-button
+                    size="small"
+                    fill="solid"
+                    style="--background: #F1C204; --color: black; --border-radius: 3px; font-weight: 600;"
+                    expand="block"
+                    @click="openEditModal(update, index)">
+                    Edit
+                  </ion-button>
 
-              <button 
-                v-for="page in totalPages"
-                :key="page"
-                :class="['pagination-button', { active: currentPage === page }]"
-                @click="currentPage = page"
-                :aria-current="currentPage === page ? 'page' : false"
-              >
-                {{ page }}
-              </button>
+                  <ion-button
+                    size="small"
+                    fill="solid"
+                    style="--background: #970303; --color: white; --border-radius: 3px; font-weight: 600;"
+                    expand="block"
+                    @click="deleteUpdate(update.update_id)">
+                    Delete
+                  </ion-button>
 
-              <button 
-                :disabled="currentPage === totalPages" 
-                @click="currentPage++"
-                class="pagination-button"
-                aria-label="Next page"
-              >
-                Next &raquo;
-              </button>
+                  <ion-button
+                    size="small"
+                    fill="solid"
+                    :style="update.status === 'Active'
+                      ? '--background:#07055dcf; --color:white; --border-radius:3px; font-weight:600;'
+                      : '--background:#008000; --color:white; --border-radius:3px; font-weight:600;'"
+                    expand="block"
+                    @click="deployUpdate(update)">
+                    {{ update.status === 'Active' ? 'Withdraw' : 'Deploy' }}
+                  </ion-button>
+                </td>
+              </tr>
+            </tbody>
+            </table>
+          </div>
+
+          <!-- Modal -->
+          <ion-modal :is-open="isModalOpen" @didDismiss="isModalOpen = false">
+            <div style="background:white; border-radius:8px; overflow:hidden; margin-top: 10px; max-width: 500px; margin-left:auto; margin-right:auto;">
+              <!-- Header -->
+              <div style="background:#07055D; color:white; padding:10px; display:flex; justify-content:space-between; align-items:center;">
+                <b>{{ isEdit ? 'Edit Update' : 'Add New Update' }}</b>
+                <button @click="isModalOpen = false" style="background:none; border:none; color:white; font-size:18px;">✖</button>
+              </div>
+
+              <!-- Body -->
+              <div style="padding:15px; background:#D9D9D9;">
+                <label><b>Update Name:</b></label>
+                <input v-model="currentUpdate.name" placeholder="Enter name"
+                  style="width:100%; padding:6px; margin-bottom:8px; border:1px solid #b1b1b2; border-radius:4px; background-color:white; font-size:14px; color:black; margin-top: 5px;" />
+
+                <label><b>Short Description:</b></label>
+                <textarea v-model="currentUpdate.description" placeholder="Enter short description"
+                  style="width:100%; padding:6px; border:1px solid #b1b1b2; border-radius:4px; background-color:white; font-size:14px; color:black; min-height:40px; max-height:180px; overflow-y:auto; resize:vertical;margin-top: 5px;"></textarea>
+
+                <ion-button fill="solid"
+                  style="--background: #07055d; --color: #ffff00; font-weight: 700; width: 120px; display: flex; margin: 15px auto; margin-top:12px;"
+                  @click="saveUpdate">
+                  {{ isEdit ? 'Update' : 'Save' }}
+                </ion-button>
+              </div>
+
+              <!-- Footer -->
+              <div style="background:#07055D; padding:10px; text-align:right; height:50px;"></div>
             </div>
-        </div>
+          </ion-modal>
         </div>
       </div>
     </ion-content>
@@ -195,136 +160,239 @@
 </template>
 
 <script setup lang="ts">
-import {
-    IonButton,
-    IonCol,
-    IonContent,
-    IonHeader,
-    IonIcon,
-    IonPage,
-    IonRow,
-    IonSearchbar,
-    IonText,
-    IonToolbar
-} from '@ionic/vue';
-import { notifications } from 'ionicons/icons';
+import { IonButton, IonContent, IonHeader, IonPage, IonText, IonToolbar } from '@ionic/vue';
 import Swal from 'sweetalert2';
-import { computed, ref } from 'vue';
+import { computed, ref, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
+import axios from 'axios';
 
 const router = useRouter();
+const API_BASE = 'http://localhost:5000/api/updates'; // backend API
 
+const removeSwalHeight = () => {
+  document.body.classList.remove("swal2-height-auto");
+  document.documentElement.classList.remove("swal2-height-auto");
+};
+
+// Confirm logout
 const confirmLogout = async () => {
   const result = await Swal.fire({
     title: 'Are you sure?',
-    text: 'You will be logged out and redirected to the login page.',
+    text: 'You will be logged out.',
     icon: 'warning',
     showCancelButton: true,
-    confirmButtonColor: '#3085d6',
-    cancelButtonColor: '#d33',
-    confirmButtonText: 'Yes, log me out!'
+    confirmButtonText: 'Yes, log me out!',
+    didOpen: () => {
+      document.body.classList.remove('swal2-height-auto');
+      document.documentElement.classList.remove('swal2-height-auto');
+    },
   });
 
   if (result.isConfirmed) {
-    router.push('/login');
+    try {
+      await axios.post('http://localhost:5000/api/users/admin-logout', {}, { withCredentials: true });
+      router.push('/adminLogIn'); // redirect to login page
+    } catch (err) {
+      console.error(err);
+      Swal.fire({
+        icon: 'error',
+        title: 'Error',
+        text: 'Logout failed',
+        didOpen: () => {
+          document.body.classList.remove('swal2-height-auto');
+          document.documentElement.classList.remove('swal2-height-auto');
+        }
+      });
+    }
   }
 };
-
+// Sidebar menus
 const showStudentMenu = ref(false);
 const showAcadMenu = ref(false);
 const showEventMenu = ref(false);
-
 const toggleStudentMenu = () => showStudentMenu.value = !showStudentMenu.value;
 const toggleAcadMenu = () => showAcadMenu.value = !showAcadMenu.value;
 const toggleEventMenu = () => showEventMenu.value = !showEventMenu.value;
 
-const totalRA = ref(3);
-const activeRA = ref(2);
-const inactiveRA = ref(1);
-
-// Table Sorting, Searching, Pagination
-const sortColumn = ref('');
-const sortOrder = ref<'asc' | 'desc'>('asc');
+// Pagination & search
 const searchQuery = ref('');
 const currentPage = ref(1);
 const itemsPerPage = 10;
 
-interface EventData {
-  ID: number;
-  RAname: string;
-  RAdesc: string;
-  RAstats: string;
+interface UpdateItem {
+  update_id: number; // backend id
+  name: string;
+  description: string;
+  status: 'Active' | 'Inactive';
 }
 
-const events = ref<EventData[]>([
-  {
-    ID: 1,
-    RAname: 'Tech Summit',
-    RAdesc: 'A gathering of tech enthusiasts.',
-    RAstats: 'Active'
-  },
-  {
-    ID: 2,
-    RAname: 'Job Fair',
-    RAdesc: 'Meet employers and find jobs.',
-    RAstats: 'Inactive'
-  },
-  {
-    ID: 3,
-    RAname: 'Orientation Week',
-    RAdesc: 'Intro to campus and student life.',
-    RAstats: 'Active'
+const updatesList = ref<UpdateItem[]>([]);
+
+// Fetch updates
+const fetchUpdates = async () => {
+  try {
+    const response = await axios.get(API_BASE);
+    updatesList.value = response.data; // keep update_id
+  } catch (error) {
+    console.error('Failed to fetch updates:', error);
   }
-]);
+};
 
-const filteredData = computed(() => {
-  let result = [...events.value];
-
+// Filtered & paginated updates
+const filteredUpdates = computed(() => {
+  let result = [...updatesList.value];
   if (searchQuery.value) {
-    const query = searchQuery.value.toLowerCase();
-    result = result.filter((event) =>
-      Object.values(event).some((value) =>
-        String(value).toLowerCase().includes(query)
-      )
+    const q = searchQuery.value.toLowerCase();
+    result = result.filter(u =>
+      u.name.toLowerCase().includes(q) || u.description.toLowerCase().includes(q)
     );
   }
-
-  if (sortColumn.value) {
-    const key = sortColumn.value as keyof EventData;
-
-    result.sort((a, b) => {
-      let aValue = a[key];
-      let bValue = b[key];
-
-      aValue = typeof aValue === 'string' ? aValue.toLowerCase() : aValue;
-      bValue = typeof bValue === 'string' ? bValue.toLowerCase() : bValue;
-
-      if (aValue < bValue) return sortOrder.value === 'asc' ? -1 : 1;
-      if (aValue > bValue) return sortOrder.value === 'asc' ? 1 : -1;
-      return 0;
-    });
-  }
-
   return result;
 });
 
-const sortData = (column: string) => {
-  if (sortColumn.value === column) {
-    sortOrder.value = sortOrder.value === 'asc' ? 'desc' : 'asc';
-  } else {
-    sortColumn.value = column;
-    sortOrder.value = 'asc';
-  }
-  currentPage.value = 1;
-};
-
-const totalPages = computed(() => {
-  return Math.ceil(filteredData.value.length / itemsPerPage);
-});
-
+const totalPages = computed(() => Math.ceil(filteredUpdates.value.length / itemsPerPage));
 const paginatedEvents = computed(() => {
   const start = (currentPage.value - 1) * itemsPerPage;
-  return filteredData.value.slice(start, start + itemsPerPage);
+  return filteredUpdates.value.slice(start, start + itemsPerPage);
+});
+
+// Modal for add/edit
+const isModalOpen = ref(false);
+const isEdit = ref(false);
+const currentUpdate = ref<Partial<UpdateItem>>({ name: '', description: '', status: 'Inactive' });
+
+const openAddModal = () => {
+  isEdit.value = false;
+  currentUpdate.value = { name: '', description: '', status: 'Inactive' };
+  isModalOpen.value = true;
+};
+
+const openEditModal = (update: UpdateItem) => {
+  isEdit.value = true;
+  currentUpdate.value = { ...update };
+  isModalOpen.value = true;
+};
+
+// Save update
+const saveUpdate = async () => {
+  if (!currentUpdate.value.name || !currentUpdate.value.description) {
+    alert('Please fill in both fields');
+    return;
+  }
+
+  const result = await Swal.fire({
+    title: isEdit.value ? 'Update this item?' : 'Add new item?',
+    icon: 'question',
+    showCancelButton: true,
+    confirmButtonText: isEdit.value ? 'Yes, update it!' : 'Yes, add it!',
+    cancelButtonText: 'Cancel',
+    didOpen: removeSwalHeight
+  });
+
+  if (!result.isConfirmed) return;
+
+  try {
+    if (isEdit.value && currentUpdate.value.update_id) {
+      await axios.put(`${API_BASE}/${currentUpdate.value.update_id}`, currentUpdate.value);
+      await Swal.fire({
+        title: 'Updated!',
+        text: 'The update has been successfully updated.',
+        icon: 'success',
+        didOpen: removeSwalHeight
+      });
+    } else {
+      await axios.post(API_BASE, currentUpdate.value);
+      await Swal.fire({
+        title: 'Added!',
+        text: 'The update has been successfully added.',
+        icon: 'success',
+        didOpen: removeSwalHeight
+      });
+    }
+    isModalOpen.value = false;
+    await fetchUpdates();
+  } catch (error) {
+    console.error(error);
+    await Swal.fire({
+      title: 'Error',
+      text: 'Something went wrong!',
+      icon: 'error',
+      didOpen: removeSwalHeight
+    });
+  }
+};
+
+// Delete update
+const deleteUpdate = async (update_id: number) => {
+  const result = await Swal.fire({
+    title: 'Are you sure?',
+    text: 'This update will be permanently deleted.',
+    icon: 'warning',
+    showCancelButton: true,
+    confirmButtonText: 'Yes, delete it!',
+    cancelButtonText: 'Cancel',
+    didOpen: removeSwalHeight
+  });
+
+  if (!result.isConfirmed) return;
+
+  try {
+    await axios.delete(`${API_BASE}/${update_id}`);
+    await Swal.fire({
+      title: 'Deleted!',
+      text: 'The update has been successfully deleted.',
+      icon: 'success',
+      didOpen: removeSwalHeight
+    });
+    await fetchUpdates();
+  } catch (error) {
+    console.error(error);
+    await Swal.fire({
+      title: 'Error',
+      text: 'Could not delete update.',
+      icon: 'error',
+      didOpen: removeSwalHeight
+    });
+  }
+};
+
+// Deploy / toggle status
+const deployUpdate = async (update: UpdateItem) => {
+  const action = update.status === 'Active' ? 'Inactive' : 'Active';
+  const result = await Swal.fire({
+    title: `Are you sure you want to ${action === 'Active' ? 'deploy' : 'withdraw'} this update?`,
+    icon: 'question',
+    showCancelButton: true,
+    confirmButtonText: 'Yes',
+    cancelButtonText: 'Cancel',
+    didOpen: removeSwalHeight
+  });
+
+  if (!result.isConfirmed) return;
+
+  try {
+    await axios.put(`${API_BASE}/${update.update_id}`, { ...update, status: action });
+    await Swal.fire({
+      title: 'Success!',
+      text: `Update is now ${action}.`,
+      icon: 'success',
+      didOpen: removeSwalHeight
+    });
+    await fetchUpdates();
+  } catch (error) {
+    console.error(error);
+    await Swal.fire({
+      title: 'Error',
+      text: 'Could not update status.',
+      icon: 'error',
+      didOpen: removeSwalHeight
+    });
+  }
+};
+
+// Fetch updates on mount
+onMounted(() => {
+  fetchUpdates();
 });
 </script>
 
@@ -431,6 +499,12 @@ const paginatedEvents = computed(() => {
   margin-left: 10px;
   padding: 3px;
 }
+
+.toolbar-icons {
+  display: flex;
+  align-items: center;
+}
+
 ion-icon {
   font-size: 35px !important;
   color: #fff !important;
@@ -447,7 +521,7 @@ ion-icon {
     margin-top: 0px !important;
     font-weight: 700;
     text-align: center;
-    margin-bottom: 15px;
+    margin-bottom: 8px;
 }
 h4{
     font-size: 24px;
@@ -627,5 +701,23 @@ select{
     margin-left: -3px;
     color: black;
     background: #e6e6e6;
+}
+ion-modal {
+  --background: transparent !important;
+  --ion-background-color: transparent !important;
+  --box-shadow: none !important;
+  border-radius: 5px !important;
+  margin-top: 10px;
+}
+ion-modal::part(backdrop) {
+  background: transparent !important;
+}
+label{
+  color: #202222;
+  font-size: 15px !important;
+}
+b{
+  margin: 0 auto;
+  font-size: 16px;
 }
 </style>
