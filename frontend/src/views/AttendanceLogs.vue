@@ -13,7 +13,8 @@
 
     <!-- Content -->
     <ion-content class="ad-background">
-      <div class="content-wrapper">
+      <div class="content-wrapper" style="display:flex;">
+
         <!-- Sidebar -->
         <div class="sidebar">
           <router-link to="/dashboard" class="sidebar-title">Dashboard</router-link>
@@ -47,61 +48,69 @@
                 <li><router-link to="/attendance-records" class="sub">View Attendance Records</router-link></li>
               </ul>
             </li>
-            <li><router-link to="/Request" class="sidebar-link">Request Management</router-link></li>
-            <li><router-link to="/Notif" class="sidebar-link">Notification Management</router-link></li>
-            <li><router-link to="/Feed" class="sidebar-link">Feedback Management</router-link></li>
-            <li><router-link to="/Update" class="sidebar-link">Featured Updates</router-link></li>
-            <li><router-link to="/account-center" class="sidebar-link">Account Center</router-link></li>
+            <template v-if="admin && admin.status !== 0">
+              <li><router-link to="/Request" class="sidebar-link">Request Management</router-link></li>
+              <li><router-link to="/Notif" class="sidebar-link">Notification Management</router-link></li>
+              <li><router-link to="/Feed" class="sidebar-link">Feedback Management</router-link></li>
+              <li><router-link to="/Update" class="sidebar-link">Featured Updates</router-link></li>
+            </template>
+            <template v-if="admin && admin.status !== 2">
+              <li><router-link to="/Account-center" class="sidebar-link">Account Center</router-link></li>
+            </template>
             <li>
-              <a href="javascript:void(0);" class="sidebar-link" @click="confirmLogout">
-                  Log Out
-              </a>
-            </li>          </ul>
+              <a href="javascript:void(0);" class="sidebar-link" @click="confirmLogout">Log Out</a>
+            </li>
+          </ul>
         </div>
 
         <!-- Main Content -->
-        <div class="main-content">
-
-          <h4>{{ studentName }}'s Attendance Log</h4>
+        <div class="main-content" style="flex:1; padding-left:16px;">
+          <h4>Attendance Log</h4>
 
           <ion-row class="ion-align-items-center ion-justify-content-between" style="margin-bottom: 10px;">
-            <ion-col size="7">
-            </ion-col>
+            <ion-col size="7"></ion-col>
             <ion-col size="5">
               <ion-searchbar v-model="searchQuery" class="white-searchbar" placeholder="Search..." animated />
             </ion-col>
           </ion-row>
 
-          <div style="overflow-x: auto;">
-            <table style="width: 100%; border-collapse: collapse; font-size: 14px;" class="responsive-table">
+          <div style="overflow-x:auto;">
+            <table style="width:100%; border-collapse: collapse; font-size:14px;">
               <thead>
                 <tr>
-                  <th>Event Name</th>
-                  <th>Time In (AM)</th>
-                  <th class="break">Mid-Event Check (AM)</th>
-                  <th>Time Out (AM)</th>
-                  <th >Time In (PM)</th>
-                  <th class="break">Mid-Event Check (PM)</th>
-                  <th>Time Out (PM)</th>
-                  <th>VA</th>
+                  <th @click="sortData('event_name')" style="cursor:pointer">Event Name <span v-if="sortColumn==='event_name'">{{ sortOrder==='asc'?'▲':'▼' }}</span></th>
+                  <th>Time In</th>
+                  <th>Trivia Time In</th>
+                  <th>Time Out</th>
+                  <th>Afternoon Time In</th>
+                  <th>Afternoon Trivia In</th>
+                  <th>Afternoon Time Out</th>
                   <th>AR</th>
-                  <th >Attendance Status</th>
+                  <th>Status</th>
                 </tr>
               </thead>
               <tbody>
                 <tr v-for="detail in paginatedDetails" :key="detail.attendance_id">
-                  <td>{{ detail.studName }}</td>
-                  <td>{{ detail.progYearSec }}</td>
-                  <td>{{ detail.timeIn }}</td>
-                  <td>{{ detail.midEventcheck }}</td>
-                  <td>{{ detail.timeOut }}</td>
-                  <td>{{ detail.afternoontimeIn }}</td>
-                  <td>{{ detail.afternoonmidEventcheck }}</td>
-                  <td>{{ detail.afternoontimeOut }}</td>
-                  <td>{{ detail.afternoontimeOut }}</td>
-                  <td>{{ detail.afternoontimeOut }}</td>
+                  <td>{{ detail.event_name }}</td>
+                  <td>{{ detail.time_in_formatted || '-' }}</td>
                   <td>
-                    <span :style="getAttendanceStyle(detail.attendanceStats)">{{ detail.attendanceStats }}</span>
+                    <span :style="getTriviaStyle(detail.trivia_time_in_formatted)">
+                      {{ detail.trivia_time_in_formatted || '-' }}
+                    </span>
+                  </td>
+                  <td>{{ detail.time_out_formatted || '-' }}</td>
+                  <td>{{ detail.afternoon_time_in_formatted || '-' }}</td>
+                  <td>
+                    <span :style="getTriviaStyle(detail.afternoon_trivia_time_in_formatted)">
+                      {{ detail.afternoon_trivia_time_in_formatted || '-' }}
+                    </span>
+                  </td>
+                  <td>{{ detail.afternoon_time_out_formatted || '-' }}</td>
+                  <td :style="getStatusStyle(detail.request_status)">
+                    {{ detail.request_status }}
+                  </td>
+                  <td :style="getAttendanceStatusStyle(detail.attendance_status)">
+                    {{ detail.attendance_status }}
                   </td>
                 </tr>
               </tbody>
@@ -109,40 +118,33 @@
           </div>
 
           <!-- Pagination -->
-          <div class="pagination-container" style="margin-top:12px">
-            <button :disabled="currentPage === 1" @click="currentPage--" class="pagination-button">&laquo; Prev</button>
-            <button v-for="page in totalPages" :key="page" :class="['pagination-button', { active: currentPage === page }]" @click="currentPage = page">{{ page }}</button>
-            <button :disabled="currentPage === totalPages" @click="currentPage++" class="pagination-button">Next &raquo;</button>
+          <div class="pagination-container" style="margin-top:12px;">
+            <button :disabled="currentPage===1" @click="currentPage--">&laquo; Prev</button>
+            <button v-for="page in totalPages" :key="page" :class="{ active: currentPage===page }" @click="currentPage=page">{{ page }}</button>
+            <button :disabled="currentPage===totalPages" @click="currentPage++">Next &raquo;</button>
           </div>
         </div>
+
       </div>
     </ion-content>
 
     <!-- Footer -->
-    <div class="footer">
-      <ion-text>
-        <small>&copy; All Rights Reserved PPG 2025.</small>
-      </ion-text>
+    <div class="footer" style="text-align:center; padding:8px; background:#f3f4f6;">
+      <ion-text><small>&copy; All Rights Reserved PPG 2025.</small></ion-text>
     </div>
   </ion-page>
 </template>
 
 <script setup lang="ts">
-import { IonButton, IonCol, IonContent, IonHeader, IonIcon, IonPage, IonRow, IonSearchbar, IonText, IonToolbar } from '@ionic/vue';
-import jsPDF from 'jspdf';
-import autoTable from 'jspdf-autotable';
-import Swal from 'sweetalert2';
-import { computed, ref, onMounted } from 'vue';
-import { useRouter, useRoute } from 'vue-router';
+import { ref, computed, onMounted } from 'vue';
+import { useRoute, useRouter } from 'vue-router';
 import axios from 'axios';
+import Swal from 'sweetalert2';
 
-/* router & route */
-const router = useRouter();
 const route = useRoute();
-/* read any of possible param names so undefined won't happen */
-const eventId = route.params.id || route.params.eventID || route.params.event_id;
+const router = useRouter();
+const studentId = route.params.student_id || route.params.id;
 
-/* Sidebar Menu */
 const showStudentMenu = ref(false);
 const showAcadMenu = ref(false);
 const showEventMenu = ref(false);
@@ -150,355 +152,123 @@ const toggleStudentMenu = () => (showStudentMenu.value = !showStudentMenu.value)
 const toggleAcadMenu = () => (showAcadMenu.value = !showAcadMenu.value);
 const toggleEventMenu = () => (showEventMenu.value = !showEventMenu.value);
 
-/* Logout (keeps didOpen removal) */
- const confirmLogout = async () => {
+const confirmLogout = async () => {
   const result = await Swal.fire({
-    title: 'Are you sure?',
-    text: 'You will be logged out.',
-    icon: 'warning',
-    showCancelButton: true,
-    confirmButtonText: 'Yes, log me out!',
-    didOpen: () => {
-      document.body.classList.remove('swal2-height-auto');
-      document.documentElement.classList.remove('swal2-height-auto');
-    },
+    title:'Are you sure?', text:'You will be logged out.', icon:'warning', showCancelButton:true, confirmButtonText:'Yes, log me out!'
   });
-
-  if (result.isConfirmed) {
-    try {
-      await axios.post('http://localhost:5000/api/users/admin-logout', {}, { withCredentials: true });
-      router.push('/adminLogIn'); // redirect to login page
-    } catch (err) {
-      console.error(err);
-      Swal.fire({
-        icon: 'error',
-        title: 'Error',
-        text: 'Logout failed',
-        didOpen: () => {
-          document.body.classList.remove('swal2-height-auto');
-          document.documentElement.classList.remove('swal2-height-auto');
-        }
-      });
-    }
+  if(result.isConfirmed){
+    await axios.post('http://localhost:5000/api/users/admin-logout', {}, {withCredentials:true});
+    router.push('/adminLogIn');
   }
-};
+}
 
-/* Generate Report */
-/* Generate Report */
-const generateReport = () => {
-  if (eventId) {
-    window.location.href = `/generate-report/${eventId}`;
-    // or: window.location.assign(`/generate-report/${eventId}`);
-  } else {
-    Swal.fire({
-      icon: 'error',
-      title: 'Missing Event ID',
-      text: 'Unable to generate report because event ID was not found.',
-      didOpen: () => {
-        document.body.classList.remove('swal2-height-auto');
-        document.documentElement.classList.remove('swal2-height-auto');
-      }
-    });
-  }
-};
-
-/* state for summary */
-const eventName = ref('');
-const eventDate = ref('');
-const totalAttendees = ref(0);
-const totalAbsences = ref(0);
-const incompleteAttendance = ref(0);
-const feedbacks = ref(0);
-const eventStats = ref('');
-
-/* Attendance details structure */
 interface AttendanceDetail {
-  attendance_id: number;
-  studName: string;
-  progYearSec: string;
-  timeIn: string | null;
-  midEventcheck: string | null;
-  timeOut: string | null;
-  absenceReq: string | null;
-  remarks: string | null;
-  attendanceStats: string;
-  canSettle?: boolean;
-  start_date_time?: string;
-  end_date_time?: string;
-  event_name?: string;
-  afternoontimeIn: string | null;
-  afternoonmidEventcheck: string | null;
-  afternoontimeOut: string | null;
+  attendance_id:number;
+  event_name:string;
+  time_in_formatted:string|null;
+  trivia_time_in_formatted:string|null;
+  time_out_formatted:string|null;
+  afternoon_time_in_formatted:string|null;
+  afternoon_trivia_time_in_formatted:string|null;
+  afternoon_time_out_formatted:string|null;
+  remarks:string|null;
+  request_status:string|null;
+  attendance_status:string|null;
 }
 
 const attendanceDetails = ref<AttendanceDetail[]>([]);
-
-/* helper: safe time formatting (accepts ISO or already formatted) */
-function formatTimeSafe(val: any) {
-  if (!val && val !== 0) return '';
-  // If it's already a formatted string like "12:34 PM", return as-is
-  if (typeof val === 'string' && val.match(/(AM|PM|am|pm)/)) return val;
-  const d = new Date(val);
-  if (!isNaN(d.getTime())) {
-    return d.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit', hour12: true });
-  }
-  // fallback to raw string
-  return String(val);
-}
-
-/* helper: parse date safely */
-function parseDateSafe(val: any) {
-  if (!val) return null;
-  const d = new Date(val);
-  if (!isNaN(d.getTime())) return d;
-  const parsed = Date.parse(String(val));
-  return isNaN(parsed) ? null : new Date(parsed);
-}
-
-/* Fetch attendance details */
-const fetchAttendanceDetails = async () => {
-  try {
-    if (!eventId) {
-      console.error('No eventId param found in route.');
-      return;
-    }
-
-    const res = await axios.get(`http://localhost:5000/api/attendance/details/${eventId}`);
-    const rawList = res.data?.attendanceDetails ?? [];
-
-    // Map API response to AttendanceDetail
-    attendanceDetails.value = rawList.map((d: any) => {
-      const timeIn = formatTimeSafe(d.timeIn);
-      const midEventcheck = formatTimeSafe(d.midEventcheck);
-      const timeOut = formatTimeSafe(d.timeOut);
-      const afternoontimeIn = formatTimeSafe(d.afternoontimeIn);
-      const afternoonmidEventcheck = formatTimeSafe(d.afternoonmidEventcheck);
-      const afternoontimeOut = formatTimeSafe(d.afternoontimeOut);
-
-      const startDate = parseDateSafe(d.startDateTime);
-      const endDate = parseDateSafe(d.endDateTime);
-      const now = new Date();
-      const eventEnded = endDate ? now > endDate : false;
-
-      let remarks = d.remarks || '';
-      let attendanceStats = d.attendanceStats || 'Unsettled';
-
-      // Compute derived remarks & status
-      const hasIn = !!timeIn;
-      const hasMid = !!midEventcheck;
-      const hasOut = !!timeOut;
-
-      if (hasIn && hasMid && hasOut) {
-        remarks = 'Present';
-        attendanceStats = 'Complete';
-      } else if (eventEnded && !hasIn && !hasMid && !hasOut) {
-        remarks = 'Missed';
-        if (!attendanceStats || attendanceStats.toLowerCase() === 'unsettled') {
-          attendanceStats = 'Unsettled';
-        }
-      } else if (attendanceStats.toLowerCase() === 'excused') {
-        remarks = remarks || 'Excused';
-        attendanceStats = 'Excused';
-      } else if (!hasIn || !hasMid || !hasOut) {
-        attendanceStats = attendanceStats || 'Unsettled';
-        remarks = remarks || 'Incomplete';
-      }
-
-      return {
-        attendance_id: d.attendance_id,
-        studName: d.studName,
-        progYearSec: d.progYearSec,
-        timeIn,
-        midEventcheck,
-        timeOut,
-        afternoontimeIn,
-        afternoonmidEventcheck,
-        afternoontimeOut,
-        absenceReq: d.absenceReq ?? '',
-        remarks,
-        attendanceStats,
-        canSettle: Number(d.canSettle ?? 0) === 1,
-        start_date_time: d.startDateTime,
-        end_date_time: d.endDateTime,
-        event_name: d.event_name,
-      } as AttendanceDetail;
-    });
-
-    // Update summary
-    if (attendanceDetails.value.length > 0) {
-      const first = attendanceDetails.value[0];
-      eventName.value = first.event_name ?? '';
-      eventDate.value = parseDateSafe(first.start_date_time)?.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' }) || '';
-      const start = parseDateSafe(first.start_date_time);
-      const end = parseDateSafe(first.end_date_time);
-      const now = new Date();
-      if (start && end) {
-        eventStats.value = now < start ? 'Upcoming' : now <= end ? 'Ongoing' : 'Done';
-      } else {
-        eventStats.value = 'Unknown';
-      }
-
-      totalAttendees.value = attendanceDetails.value.length;
-      totalAbsences.value = attendanceDetails.value.filter(r => r.remarks.toLowerCase() === 'missed').length;
-      incompleteAttendance.value = attendanceDetails.value.filter(r => r.remarks.toLowerCase() === 'incomplete').length;
-      feedbacks.value = 0;
-    } else {
-      eventName.value = '';
-      eventDate.value = '';
-      totalAttendees.value = 0;
-      totalAbsences.value = 0;
-      incompleteAttendance.value = 0;
-      feedbacks.value = 0;
-      eventStats.value = '';
-    }
-  } catch (err) {
-    console.error('Error fetching attendance details:', err);
-  }
-};
-
-
-onMounted(() => {
-  fetchAttendanceDetails();
-});
-
-/* Sorting / Searching / Pagination (same logic preserved) */
-const sortColumn = ref('');
-const sortOrder = ref<'asc' | 'desc'>('asc');
 const searchQuery = ref('');
+const sortColumn = ref('event_name');
+const sortOrder = ref<'asc'|'desc'>('asc');
 const currentPage = ref(1);
 const itemsPerPage = 10;
 
-const filteredData = computed(() => {
-  let result = [...attendanceDetails.value];
-  if (searchQuery.value) {
-    const q = searchQuery.value.toLowerCase();
-    result = result.filter(item => Object.values(item).some(val => String(val ?? '').toLowerCase().includes(q)));
+const fetchAttendanceDetails = async () => {
+  if(!studentId) return;
+  const res = await axios.get(`http://localhost:5000/api/students/attendance-logs/${studentId}`);
+  const logs = res.data.attendanceLogs ?? [];
+  attendanceDetails.value = logs.map((d:any)=>({
+    attendance_id:d.attendance_id,
+    event_name:d.event_name,
+    time_in_formatted:d.time_in_formatted,
+    trivia_time_in_formatted:d.trivia_time_in_formatted,
+    time_out_formatted:d.time_out_formatted,
+    afternoon_time_in_formatted:d.afternoon_time_in_formatted,
+    afternoon_trivia_time_in_formatted:d.afternoon_trivia_time_in_formatted,
+    afternoon_time_out_formatted:d.afternoon_time_out_formatted,
+    remarks:d.remarks,
+    request_status:d.request_status,
+    attendance_status:d.attendance_status
+  }));
+}
+
+const admin = ref<any>(null);
+onMounted(async () => {
+  try {
+    const res = await axios.get('http://localhost:5000/api/check-admin-session', {
+      withCredentials: true
+    });
+
+    if (res.data.loggedIn && res.data.admin) {
+      admin.value = res.data.admin;
+      router.push(`/attendance-logs/${studentId}`);
+    } else {
+      router.replace('/adminLogIn'); // redirect if not logged in
+    }
+  } catch (err) {
+    console.error('Session check failed:', err);
+    router.replace('/adminLogIn');
   }
-  if (sortColumn.value) {
-    const column = sortColumn.value as keyof AttendanceDetail;
-    result.sort((a, b) => {
-      const aVal = String(a[column] ?? '').toLowerCase();
-      const bVal = String(b[column] ?? '').toLowerCase();
-      if (aVal < bVal) return sortOrder.value === 'asc' ? -1 : 1;
-      if (aVal > bVal) return sortOrder.value === 'asc' ? 1 : -1;
+  fetchAttendanceDetails();
+});
+
+const filteredData = computed(()=>{
+  let result = [...attendanceDetails.value];
+  if(searchQuery.value){
+    const q = searchQuery.value.toLowerCase();
+    result = result.filter(item => Object.values(item).some(val=>String(val ?? '').toLowerCase().includes(q)));
+  }
+  if(sortColumn.value){
+    const col = sortColumn.value as keyof AttendanceDetail;
+    result.sort((a,b)=>{
+      const aVal = String(a[col] ?? '').toLowerCase();
+      const bVal = String(b[col] ?? '').toLowerCase();
+      if(aVal < bVal) return sortOrder.value==='asc'?-1:1;
+      if(aVal > bVal) return sortOrder.value==='asc'?1:-1;
       return 0;
     });
   }
   return result;
 });
 
-const totalPages = computed(() => Math.ceil(filteredData.value.length / itemsPerPage));
-const paginatedDetails = computed(() => {
-  const start = (currentPage.value - 1) * itemsPerPage;
-  return filteredData.value.slice(start, start + itemsPerPage);
+const totalPages = computed(()=>Math.ceil(filteredData.value.length/itemsPerPage));
+const paginatedDetails = computed(()=>{
+  const start = (currentPage.value-1)*itemsPerPage;
+  return filteredData.value.slice(start, start+itemsPerPage);
 });
 
-function sortData(column: keyof AttendanceDetail) {
-  if (sortColumn.value === column) sortOrder.value = sortOrder.value === 'asc' ? 'desc' : 'asc';
-  else { sortColumn.value = column as string; sortOrder.value = 'asc'; }
-  currentPage.value = 1;
+function sortData(column:keyof AttendanceDetail){
+  if(sortColumn.value===column) sortOrder.value = sortOrder.value==='asc'?'desc':'asc';
+  else { sortColumn.value = column as string; sortOrder.value='asc'; }
+  currentPage.value=1;
 }
 
-/* Settle attendance (local update — you can call API here) */
-const settleAttendance = async (detail: AttendanceDetail) => {
-  const result = await Swal.fire({
-    title: 'Settle Attendance Record?',
-    text: 'Do you want to settle this attendance record?',
-    icon: 'question',
-    showCancelButton: true,
-    confirmButtonText: 'Yes, settle it!',
-    cancelButtonText: 'Cancel',
-    didOpen: () => {
-      document.body.classList.remove('swal2-height-auto');
-      document.documentElement.classList.remove('swal2-height-auto');
-    }
-  });
-
-  if (result.isConfirmed) {
-    try {
-      // ✅ Call API to settle
-      await axios.put(`http://localhost:5000/api/attendance/settle/${detail.attendance_id}`);
-
-      // ✅ Update UI instantly
-      detail.attendanceStats = 'Settled';   // 🔥 changed from 'Complete' to 'Settled'
-      detail.canSettle = false;
-
-      await Swal.fire({
-        icon: 'success',
-        title: 'Settled!',
-        text: 'Attendance has been updated.',
-        didOpen: () => {
-          document.body.classList.remove('swal2-height-auto');
-          document.documentElement.classList.remove('swal2-height-auto');
-        }
-      });
-    } catch (err) {
-      console.error(err);
-      await Swal.fire({
-        icon: 'error',
-        title: 'Error',
-        text: 'Failed to settle attendance.',
-        didOpen: () => {
-          document.body.classList.remove('swal2-height-auto');
-          document.documentElement.classList.remove('swal2-height-auto');
-        }
-      });
-    }
-  }
-};
-
-/* PDF export (keeps your original behavior) */
-const exportData = () => {
-  const doc = new jsPDF();
-  doc.setFontSize(14);
-  doc.text('Event Attendance Records Summary', 14, 20);
-
-  autoTable(doc, {
-    startY: 30,
-    head: [['Event Name', 'Date', 'Total Attendees', 'Total Absences', 'Incomplete', 'Feedbacks', 'Status']],
-    body: [[eventName.value, eventDate.value, totalAttendees.value, totalAbsences.value, incompleteAttendance.value, feedbacks.value, eventStats.value]]
-  });
-
-  const startY = (doc as any).lastAutoTable?.finalY || 60;
-  doc.text('Attendance Details', 14, startY + 20);
-
-  autoTable(doc, {
-    startY: startY + 30,
-    head: [['Name', 'Prog, Yr & Sec', 'Time In', 'Mid-Event', 'Time Out', 'Remarks', 'Status']],
-    body: attendanceDetails.value.map(d => [d.studName, d.progYearSec, d.timeIn, d.midEventcheck, d.timeOut, d.remarks, d.attendanceStats]),
-    styles: { fontSize: 9 }
-  });
-
-  doc.save(`Attendance_${eventName.value || 'Event'}.pdf`);
-};
-
-/* color badge helpers (inline styles to avoid dependency on tailwind) */
-function getRemarksStyle(remarks: string | null) {
-  if (!remarks) return { color: '#374151' }; // gray
-  const r = remarks.toLowerCase();
-  if (r.includes('present')) return { backgroundColor: '#dcfce7', color: '#166534', padding: '4px 8px', borderRadius: '8px', fontWeight: 600 };
-  if (r.includes('missed')) return { backgroundColor: '#fee2e2', color: '#991b1b', padding: '4px 8px', borderRadius: '8px', fontWeight: 600 };
-  if (r.includes('incomplete')) return { backgroundColor: '#fff7ed', color: '#92400e', padding: '4px 8px', borderRadius: '8px', fontWeight: 600 };
-  return { backgroundColor: '#f3f4f6', color: '#374151', padding: '4px 8px', borderRadius: '8px' };
+function getStatusStyle(request_status:string){
+  if(request_status==='Approved') return {backgroundColor:'#d1fae5',color:'#065f46',padding:'4px 8px',borderRadius:'6px',fontWeight:600};
+  if(request_status==='Rejected') return {backgroundColor:'#fee2e2',color:'#991b1b',padding:'4px 8px',borderRadius:'6px',fontWeight:600};
+  if(request_status==='Pending') return {backgroundColor:'#fef3c7',color:'#92400e',padding:'4px 8px',borderRadius:'6px',fontWeight:600};
+  return {backgroundColor:'#f3f4f6',color:'#374151',padding:'4px 8px',borderRadius:'6px',fontWeight:600};
 }
 
-function getAttendanceStyle(status: string | null) {
-  if (!status) return { color: '#374151' };
-  const s = status.toLowerCase();
-  if (s.includes('complete')) return { backgroundColor: '#d1fae5', color: '#065f46', padding: '4px 8px', borderRadius: '8px', fontWeight: 700 };
-  if (s.includes('excused')) return { backgroundColor: '#dbf4ff', color: '#075985', padding: '4px 8px', borderRadius: '8px', fontWeight: 700 };
-  if (s.includes('unsettled')) return { backgroundColor: '#fff7ed', color: '#b45309', padding: '4px 8px', borderRadius: '8px', fontWeight: 700 };
-  if (s.includes('settled')) return { backgroundColor: '#f3e8ff', color: '#6b21a8', padding: '4px 8px', borderRadius: '8px', fontWeight: 700 };
-  return { backgroundColor: '#f3f4f6', color: '#374151', padding: '4px 8px', borderRadius: '8px' };
+function getAttendanceStatusStyle(attendance_status:string|null){
+  if(attendance_status==='Settled') return {backgroundColor:'#d1fae5',color:'#065f46',padding:'4px 8px',borderRadius:'6px',fontWeight:600};
+  if(attendance_status==='Unsettled') return {backgroundColor:'#fee2e2',color:'#991b1b',padding:'4px 8px',borderRadius:'6px',fontWeight:600};
+  return {backgroundColor:'#f3f4f6',color:'#374151',padding:'4px 8px',borderRadius:'6px',fontWeight:600};
 }
 
-function getEventStyle(status: string | null) {
-  if (!status) return {};
-  const s = status.toLowerCase();
-  if (s.includes('upcoming')) return { backgroundColor: '#eff6ff', color: '#1d4ed8', padding: '4px 8px', borderRadius: '8px', fontWeight: 700 };
-  if (s.includes('ongoing')) return { backgroundColor: '#ecfdf5', color: '#15803d', padding: '4px 8px', borderRadius: '8px', fontWeight: 700 };
-  if (s.includes('done') || s.includes('completed')) return { backgroundColor: '#f3f4f6', color: '#4b5563', padding: '4px 8px', borderRadius: '8px', fontWeight: 700 };
-  return {};
+function getTriviaStyle(val:string|null){
+  if(val==='Missed') return {backgroundColor:'#fee2e2',color:'#991b1b',padding:'4px 6px',borderRadius:'6px',fontWeight:600};
+  return {backgroundColor:'#d1fae5',color:'#065f46',padding:'4px 6px',borderRadius:'6px',fontWeight:600};
 }
 </script>
 

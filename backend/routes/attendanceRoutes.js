@@ -18,5 +18,6 @@ router.get('/controls/:eventID', attendanceController.getAttendanceControlsbyeve
 router.put('/:event_id/afternoon-timein', attendanceController.afternoonTimeIn);
 router.put('/:event_id/afternoon-trivia', attendanceController.afternoonTrivia);
 router.put('/:event_id/afternoon-timeout', attendanceController.afternoonTimeOut);
+router.put('/mark-trivia-missed/:event_id', attendanceController.markTriviaMissed);
 
 module.exports = router;

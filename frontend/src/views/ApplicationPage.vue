@@ -21,9 +21,9 @@
           <!-- Select Role -->
           <ion-item class="select-full-width">
             <ion-select v-model="role" interface="popover" placeholder="Select your role" css-class="custom-popover-width">
-              <ion-select-option value="option1">Option 1</ion-select-option>
-              <ion-select-option value="option2">Option 2</ion-select-option>
-              <ion-select-option value="option3">Option 3</ion-select-option>
+              <ion-select-option value="usher">Usherrete</ion-select-option>
+              <ion-select-option value="tech">Tech Team</ion-select-option>
+              <ion-select-option value="eventcom">Event Committee</ion-select-option>
             </ion-select>
           </ion-item>
 

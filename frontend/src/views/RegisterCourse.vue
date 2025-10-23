@@ -50,19 +50,15 @@
                             <li><router-link to="/attendance-records" class="sub">View Attendance Records</router-link></li>
                         </ul>
                     </li>
-                    <li>
-                        <router-link to="/Request" class="sidebar-link">Request Management</router-link>
-                    </li>
-                    <li>
-                        <router-link to="/Notif" class="sidebar-link">Notification Management</router-link>
-                    </li>
-                    <li>
-                        <router-link to="/Feed" class="sidebar-link">Feedback Management</router-link>
-                    </li>
-                    <li>
-                        <router-link to="/Update" class="sidebar-link">Featured Updates</router-link>
-                    </li>
-                    <li><router-link to="/account-center" class="sidebar-link">Account Center</router-link></li>
+                     <template v-if="admin && admin.status !== 0">
+                        <li><router-link to="/Request" class="sidebar-link">Request Management</router-link></li>
+                        <li><router-link to="/Notif" class="sidebar-link">Notification Management</router-link></li>
+                        <li><router-link to="/Feed" class="sidebar-link">Feedback Management</router-link></li>
+                        <li><router-link to="/Update" class="sidebar-link">Featured Updates</router-link></li>
+                      </template>
+                      <template v-if="admin && admin.status !== 2">
+                        <li><router-link to="/Account-center" class="sidebar-link">Account Center</router-link></li>
+                      </template>
                      <li>
                         <a href="javascript:void(0);" class="sidebar-link" @click="confirmLogout">
                             Log Out
@@ -125,7 +121,7 @@ import {
 } from '@ionic/vue';
 import { notifications } from 'ionicons/icons';
 import Swal from 'sweetalert2';
-import { ref } from 'vue';
+import { ref, onMounted} from 'vue';
 import { useRouter } from 'vue-router';
 import axios from 'axios';
 
@@ -201,9 +197,36 @@ const handleRegister = async () => {
     CourseName.value = '';
   } catch (error) {
     console.error('Registration error:', error);
+    Swal.fire({
+        icon: 'error',
+        title: 'Error',
+        text: 'Failed to register the course.',
+        didOpen: () => {
+          document.body.classList.remove('swal2-height-auto');
+          document.documentElement.classList.remove('swal2-height-auto');
+        }
+      });
     Swal.fire('Error', 'Failed to register the course.', 'error');
   }
 };
+const admin = ref<any>(null);
+
+onMounted(async () => {
+  try {
+    const res = await axios.get('http://localhost:5000/api/check-admin-session', {
+      withCredentials: true
+    });
+
+    if (res.data.loggedIn && res.data.admin) {
+      admin.value = res.data.admin;
+    } else {
+      router.replace('/adminLogIn'); // redirect if not logged in
+    }
+  } catch (err) {
+    console.error('Session check failed:', err);
+    router.replace('/adminLogIn');
+  }
+});
 </script>
 
 <style scoped>

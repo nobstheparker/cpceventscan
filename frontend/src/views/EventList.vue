@@ -50,21 +50,15 @@
                 <li><router-link to="/attendance-records" class="sub">View Attendance Records</router-link></li>
               </ul>
             </li>
-            <li>
-              <router-link to="/Request" class="sidebar-link">Request Management</router-link>
-            </li>
-            <li>
-              <router-link to="/Notif" class="sidebar-link">Notification Management</router-link>
-            </li>
-            <li>
-              <router-link to="/Feed" class="sidebar-link">Feedback Management</router-link>
-            </li>
-            <li>
-              <router-link to="/Update" class="sidebar-link">Featured Updates</router-link>
-            </li>
-            <li>
-              <router-link to="/account-center" class="sidebar-link">Account Center</router-link>
-            </li>
+             <template v-if="admin && admin.status !== 0">
+              <li><router-link to="/Request" class="sidebar-link">Request Management</router-link></li>
+              <li><router-link to="/Notif" class="sidebar-link">Notification Management</router-link></li>
+              <li><router-link to="/Feed" class="sidebar-link">Feedback Management</router-link></li>
+              <li><router-link to="/Update" class="sidebar-link">Featured Updates</router-link></li>
+            </template>
+            <template v-if="admin && admin.status !== 2">
+              <li><router-link to="/Account-center" class="sidebar-link">Account Center</router-link></li>
+            </template>
              <li>
                 <a href="javascript:void(0);" class="sidebar-link" @click="confirmLogout">
                     Log Out
@@ -75,7 +69,6 @@
 
         <div class="main-content">
           <div class="event-overviews">
-            <h3>EVENT'S OVERVIEW</h3>
                 <table class="event-table">
                     <thead>
                     <tr>
@@ -897,7 +890,23 @@ const deleteEvent = async (eventId: number) => {
   }
 };
 
-onMounted(() => {
+const admin = ref<any>(null);
+
+onMounted(async () => {
+  try {
+    const res = await axios.get('http://localhost:5000/api/check-admin-session', {
+      withCredentials: true
+    });
+
+    if (res.data.loggedIn && res.data.admin) {
+      admin.value = res.data.admin;
+    } else {
+      router.replace('/adminLogIn'); // redirect if not logged in
+    }
+  } catch (err) {
+    console.error('Session check failed:', err);
+    router.replace('/adminLogIn');
+  }
   fetchEvents();
 });
 </script>
@@ -1041,12 +1050,15 @@ h4{
   text-align: center;
   padding: 12px;
   border: 1px solid #ccc;
+  font-weight: 900;
+  font-size: 20px;
 }
 
 .event-table th {
   background-color: #07055D;
-  color: white;
+  color: #fffa00;
   font-weight: bold;
+  text-transform: uppercase;
 }
 .event-table tbody{
     color: #19191a;
@@ -1105,7 +1117,7 @@ thead {
 
 thead th {
   padding: 10px;
-  text-align: left;
+  text-align: center;
   white-space: nowrap;
 }
 tbody{
@@ -1116,8 +1128,8 @@ table td {
   background-color: white;
   color: black;
   padding: 10px;
-  border-bottom: 1px solid #ccc; 
-  border: 2px solid #07055d;
+  border-bottom: 0 !important; 
+  border: 1px solid #07055d;
 }
 ion-button.edit{
     background: #07055d;
@@ -1202,8 +1214,8 @@ select{
     background: #e6e6e6;
 }
 .action-btn{
-  display: table-cell !important;
-  width: 250px !important;
+  display: flex !important;
+  width: auto !important;
   text-align: center;
 }
 .action-btn ion-button {

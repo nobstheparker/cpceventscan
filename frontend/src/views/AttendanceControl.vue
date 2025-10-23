@@ -45,11 +45,15 @@
                 <li><router-link to="/attendance-records" class="sub">View Attendance Records</router-link></li>
               </ul>
             </li>
-            <li><router-link to="/Request" class="sidebar-link">Request Management</router-link></li>
-            <li><router-link to="/Notif" class="sidebar-link">Notification Management</router-link></li>
-            <li><router-link to="/Feed" class="sidebar-link">Feedback Management</router-link></li>
-            <li><router-link to="/Update" class="sidebar-link">Featured Updates</router-link></li>
-            <li><router-link to="/account-center" class="sidebar-link">Account Center</router-link></li>
+            <template v-if="admin && admin.status !== 0">
+              <li><router-link to="/Request" class="sidebar-link">Request Management</router-link></li>
+              <li><router-link to="/Notif" class="sidebar-link">Notification Management</router-link></li>
+              <li><router-link to="/Feed" class="sidebar-link">Feedback Management</router-link></li>
+              <li><router-link to="/Update" class="sidebar-link">Featured Updates</router-link></li>
+            </template>
+            <template v-if="admin && admin.status !== 2">
+                <li><router-link to="/Account-center" class="sidebar-link">Account Center</router-link></li>
+              </template>
              <li>
                 <a href="javascript:void(0);" class="sidebar-link" @click="confirmLogout">
                     Log Out
@@ -60,7 +64,6 @@
 
         <!-- Main Content -->
         <div class="main-content">
-          <h4>ATTENDANCE CONTROLS</h4>
           <div style="--background: transparent;">
             <!-- Search & Sort -->
             <ion-row class="ion-align-items-center ion-justify-content-between" style="margin-bottom: 10px;">
@@ -101,7 +104,7 @@
                     <td>{{ attendcontrol.eventName }}</td>
                     <td>{{ formatDate(attendcontrol.eventDate) }}</td>
                     <td>{{ attendcontrol.enabledControl }}</td>
-                    <td>
+                    <td class="action-btn">
                       <ion-button size="small" fill="solid"
                         style="--background: #F1C204;--color: black; --border-radius: 3px; font-weight: 600; "
                         expand="block"
@@ -135,39 +138,53 @@
           <!-- Trivia Modal -->
           <ion-modal :is-open="isTriviaModalOpen" @didDismiss="isTriviaModalOpen = false">
             <div style="background:white; border-radius:8px; overflow:hidden; margin-top: 10px;">
-              <div style="background:#07055D; color:white; padding:10px; display:flex; justify-content:space-between; align-items:center;">
-                <b>Create Trivia Question</b>
+              <div style="background:#07055D; color:white; padding:15px; display:flex; justify-content:space-between; align-items:center;">
+                <b style="font-size: 20px;">Create Trivia Question</b>
                 <button @click="isTriviaModalOpen = false" style="background:none; border:none; color:white; font-size:18px;">✖</button>
               </div>
 
               <div style="padding:8px 15px; background:#D9D9D9;">
+                <label><b>Time Period:</b></label>
+                <select v-model="trivia.time_period"
+                  style="width:100%; padding:6px; margin-bottom:8px; border:1px solid #b1b1b2; border-radius:4px; background-color:white; color:black;">
+                  <option value="">Select Period</option>
+                  <option value="morning">Morning</option>
+                  <option value="afternoon">Afternoon</option>
+                </select>
+
                 <label><b>Question:</b></label>
                 <input v-model="trivia.question" placeholder="Enter question"
-                  style="width:100%; padding:6px; margin-bottom:8px; margin-top:3px; border:1px solid #b1b1b2; border-radius:4px;background-color: #ffff;font-size: 14px;color: black;" />
+                  style="width:100%; padding:6px; margin-bottom:8px; border:1px solid #b1b1b2; border-radius:4px; background-color:white; color:black;" />
 
                 <div v-for="(opt, index) in trivia.options" :key="index">
-                  <label>Option {{ index+1 }}:</label>
+                  <label style="font-weight: 700;">Option {{ index+1 }}:</label>
                   <input v-model="trivia.options[index]" placeholder="Enter option"
-                    style="width:100%; padding:6px; margin-bottom:3px; border:1px solid #b1b1b2;background-color: #ffffff; border-radius:4px; margin-top: 3px; color: black; font-size: 14px;" />
+                    style="width:100%; padding:6px; margin-bottom:5px; border:1px solid #b1b1b2; border-radius:4px; background-color:white; color:black;" />
                 </div>
 
                 <label><b>Correct Answer:</b></label>
                 <select v-model="trivia.correct"
-                  style="width:100%; padding:4px; border:1px solid #b1b1b2; border-radius:4px; background-color: white; margin: 0 auto; color: black; font-size: 12px;">
-                  <option v-for="(opt, i) in trivia.options" :key="i" :value="opt">{{ opt }}</option>
+                  style="width:100%; padding:6px; border:1px solid #b1b1b2; border-radius:4px; background-color:white; color:black;">
+                  <option value="">Select correct answer</option>
+                  <option v-for="opt in trivia.options" :key="opt" :value="opt">{{ opt }}</option>
                 </select>
-                <ion-button fill="solid" style="--background: #07055d;--color: #ffff00; --margin-bottom: 8px; font-weight: 700;margin: 0 auto;display: flex;margin-top: 10px;width: 100px;;" @click="saveTrivia">Save</ion-button>
+
+                <ion-button fill="solid"
+                  style="--background:#07055d;--color:#ffff00; font-weight:700; margin: 13px auto !important; width:100px; display:flex;"
+                  @click="saveTrivia">
+                  Save
+                </ion-button>
               </div>
-              <div style="background:#07055D; padding:10px; text-align:right; height: 50px;"></div>
             </div>
           </ion-modal>
+
 
           <!-- Attendance Controls Modal -->
           <ion-modal :is-open="isAttendanceModalOpen" @didDismiss="isAttendanceModalOpen = false">
             <div style="background:white; border-radius:8px; overflow-y:scroll; margin-top: 10px;">
               <div style="background:#07055D; color:white; padding:10px; display:flex; justify-content:space-between; align-items:center; height: 50px;">
-                <b>{{ selectedEvent?.eventName }} Attendance Control</b>
-                <button @click="isAttendanceModalOpen = false" style="background:none; border:none; font-size:22px; margin-right: 5px;">✖</button>
+                <b style="font-size: 18px;">{{ selectedEvent?.eventName }} Attendance Control</b>
+                <button @click="isAttendanceModalOpen = false" style="background:none; border:none; font-size:24px; margin-right: 5px; color: white;">✖</button>
               </div>
 
               <div style="padding:10px; background:#e7e7e7;">
@@ -325,8 +342,9 @@ const isAttendanceModalOpen = ref(false);
 const selectedEvent = ref<AttendanceControl | null>(null);
 
 const trivia = ref({
+  time_period: "",
   question: "",
-  options: ["", "", "", ""],
+  options: ["", ""],
   correct: ""
 });
 
@@ -358,18 +376,73 @@ const openAttendanceModal = (event: AttendanceControl) => {
 };
 
 
-const saveTrivia = () => {
-  isTriviaModalOpen.value = false;
-  Swal.fire({
-    title: "Success",
-    text: "Trivia question has been set up successfully!",
-    icon: "success",
-    didOpen: () => {
-      document.body.classList.remove("swal2-height-auto");
-      document.documentElement.classList.remove("swal2-height-auto");
+const saveTrivia = async () => {
+  if (!selectedEvent.value) return;
+
+  const { time_period, question, options, correct } = trivia.value;
+
+  if (!time_period || !question || !options[0] || !options[1] || !correct) {
+    Swal.fire({
+      icon: "warning",
+      title: "Missing fields",
+      text: "Please complete all fields before saving.",
+      didOpen: () => {
+        document.body.classList.remove("swal2-height-auto");
+        document.documentElement.classList.remove("swal2-height-auto");
+      }
+    });
+    return;
+  }
+
+  try {
+    const payload = {
+      event_id: selectedEvent.value.eventID,
+      time_period,
+      question,
+      option1: options[0],
+      option2: options[1],
+      correct_answer: correct
+    };
+
+    const res = await axios.post("http://localhost:5000/api/trivia/add", payload);
+    
+    if (res.data.success) {
+      Swal.fire({
+        icon: "success",
+        title: "Trivia Created",
+        text: "Trivia question saved successfully!",
+        didOpen: () => {
+          document.body.classList.remove("swal2-height-auto");
+          document.documentElement.classList.remove("swal2-height-auto");
+        }
+      });
+      trivia.value = { time_period: "", question: "", options: ["", ""], correct: "" };
+      isTriviaModalOpen.value = false;
+    } else {
+      Swal.fire({
+        icon: "error",
+        title: "Error",
+        text: res.data.error || "Failed to save trivia.",
+        didOpen: () => {
+          document.body.classList.remove("swal2-height-auto");
+          document.documentElement.classList.remove("swal2-height-auto");
+        }
+      });
     }
-  });
+  } catch (err) {
+    console.error(err);
+    Swal.fire({
+      icon: "error",
+      title: "Server Error",
+      text: "Unable to connect to server.",
+      didOpen: () => {
+        document.body.classList.remove("swal2-height-auto");
+        document.documentElement.classList.remove("swal2-height-auto");
+      }
+    });
+  }
 };
+
 
 const saveAttendanceControls = async () => {
   if (!selectedEvent.value) return;
@@ -406,13 +479,26 @@ const formatDate = (dateStr: string) => {
   const options: Intl.DateTimeFormatOptions = { year: 'numeric', month: 'short', day: 'numeric' };
   return new Date(dateStr).toLocaleDateString('en-US', options);
 };
-
+const admin = ref<any>(null);
 onMounted(async () => {
+  
   try {
-    const res = await axios.get('http://localhost:5000/api/attendance/controls');
-    attendanceControls.value = Array.isArray(res.data.attendanceControls) ? res.data.attendanceControls : [];
+  const res = await axios.get('http://localhost:5000/api/attendance/controls');
+  attendanceControls.value = Array.isArray(res.data.attendanceControls) ? res.data.attendanceControls : [];
+
+  const result = await axios.get('http://localhost:5000/api/check-admin-session', {
+    withCredentials: true
+  });
+
+  if (result.data.loggedIn && result.data.admin) {
+    admin.value = result.data.admin;
+    router.replace('/attendance-page'); // redirect if logged in
+  } else {
+    router.replace('/adminLogIn'); // redirect if not logged in
+  }
+
   } catch (err) {
-    console.error('Failed to fetch attendance controls:', err);
+    console.error('Failed to fetch data or session check failed:', err);
     attendanceControls.value = [];
   }
 });
@@ -675,6 +761,7 @@ select{
     margin-left: -3px;
     color: black;
     background: #e6e6e6;
+    margin: auto;
 }
 b{
   margin: 0 auto;
@@ -694,5 +781,15 @@ ion-modal {
 ion-modal::part(backdrop) {
   background: transparent !important;
 }
-
+.action-btn{
+  display: flex !important;
+  width: auto !important;
+  justify-content: center;
+  border: 1px solid #07055d;
+  padding: 12px;
+}
+.action-btn ion-button {
+  width: 250px;
+  display: inline-table;
+}
 </style>

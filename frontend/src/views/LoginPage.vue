@@ -231,7 +231,7 @@ ion-input {
   height: 100px;
 }
 .footer {
-  position: fixed;
+  position: sticky;
   width: 100%;
   bottom: 0;
 }

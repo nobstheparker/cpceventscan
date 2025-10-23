@@ -8,7 +8,10 @@
       </ion-toolbar>
     </ion-header>
 
-    <ion-content fullscreen>
+    <ion-content class="fixed-content"
+      :scrollAssist="false"
+      :keyboard-attach="false"
+      keyboard-resize="none">
       <div id="container">
         <!-- Sub-header -->
         <div class="header-bottom">
@@ -428,7 +431,7 @@ ion-select .select-icon{
 }
 /* Footer */
 .footer {
-  position: sticky;
+  position: fixed;
   bottom: 0;
   width: 100%;
   z-index: 100;
@@ -468,5 +471,10 @@ ion-text {
   align-items: center;
   padding: 10px;
   font-size: 14px;
+}
+.fixed-content {
+  --keyboard-offset: 0px !important;
+  --offset-top: 0px !important;
+  --offset-bottom: 0px !important;
 }
 </style>

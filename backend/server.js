@@ -63,6 +63,7 @@ app.use('/api/face', faceRoutes);
 app.use('/api/attendance', attendanceRoutes);
 app.use('/api/admin', adminRoutes);
 app.use("/api/twofa", twofaRoutes);
+app.use('/api/trivia', require('./routes/triviaRoutes'));
 app.use('/api/notifications', notificationRoutes);
 app.use('/api/feedback', feedbackRoutes);
 app.use('/api/updates', updatesRoutes);

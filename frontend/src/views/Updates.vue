@@ -44,11 +44,15 @@
                 <li><router-link to="/attendance-records" class="sub">View Attendance Records</router-link></li>
               </ul>
             </li>
-            <li><router-link to="/Request" class="sidebar-link">Request Management</router-link></li>
-            <li><router-link to="/Notif" class="sidebar-link">Notification Management</router-link></li>
-            <li><router-link to="/Feed" class="sidebar-link">Feedback Management</router-link></li>
-            <li><router-link to="/Update" class="sidebar-link">Featured Updates</router-link></li>
-            <li><router-link to="/account-center" class="sidebar-link">Account Center</router-link></li>
+             <template v-if="admin && admin.status !== 0">
+              <li><router-link to="/Request" class="sidebar-link">Request Management</router-link></li>
+              <li><router-link to="/Notif" class="sidebar-link">Notification Management</router-link></li>
+              <li><router-link to="/Feed" class="sidebar-link">Feedback Management</router-link></li>
+              <li><router-link to="/Update" class="sidebar-link">Featured Updates</router-link></li>
+            </template>
+            <template v-if="admin && admin.status !== 2">
+              <li><router-link to="/Account-center" class="sidebar-link">Account Center</router-link></li>
+            </template>
              <li>
                 <a href="javascript:void(0);" class="sidebar-link" @click="confirmLogout">
                     Log Out
@@ -61,9 +65,9 @@
           <h4>Reminders & Announcement List</h4>
           <div style="display: flex; justify-content: flex-end; gap: 15px; margin-top: 5px; margin-bottom: 5px;">
             <ion-button
-              style="--background: green; --color: white; font-weight: 700; --border-radius: 5px; width: 330px;"
+              style="--background: green; --color: white; font-weight: 700; --border-radius: 5px; width: 200px;"
               @click="openAddModal">
-              Add New
+              + Add New
             </ion-button>
           </div>
 
@@ -74,7 +78,7 @@
                   <th>Name</th>
                   <th>Description</th>
                   <th>Status</th>
-                  <th>Actions</th>
+                  <th style="width: 200px;">Actions</th>
                 </tr>
               </thead>
               <tbody>
@@ -82,7 +86,7 @@
                 <td>{{ update.name }}</td>
                 <td>{{ update.description }}</td>
                 <td>{{ update.status || 'Inactive' }}</td>
-                <td>
+                <td class="action-btn" >
                   <ion-button
                     size="small"
                     fill="solid"
@@ -391,7 +395,23 @@ const deployUpdate = async (update: UpdateItem) => {
 };
 
 // Fetch updates on mount
-onMounted(() => {
+const admin = ref<any>(null);
+
+onMounted(async () => {
+  try {
+    const res = await axios.get('http://localhost:5000/api/check-admin-session', {
+      withCredentials: true
+    });
+
+    if (res.data.loggedIn && res.data.admin) {
+      admin.value = res.data.admin;
+    } else {
+      router.replace('/adminLogIn'); // redirect if not logged in
+    }
+  } catch (err) {
+    console.error('Session check failed:', err);
+    router.replace('/adminLogIn');
+  }
   fetchUpdates();
 });
 </script>
@@ -525,7 +545,7 @@ ion-icon {
 }
 h4{
     font-size: 24px;
-    margin-top: 15px;
+    margin-top: 5px;
     margin-bottom: 0px !important;
     font-weight: 700;
     text-align: center;
@@ -606,7 +626,7 @@ thead {
 
 thead th {
   padding: 10px;
-  text-align: left;
+  text-align: center;
   white-space: nowrap;
 }
 tbody{
@@ -719,5 +739,15 @@ label{
 b{
   margin: 0 auto;
   font-size: 16px;
+}
+.action-btn{
+  display: flex !important;
+  width: auto !important;
+  justify-content: center;
+  border: 1px solid #07055d;
+}
+.action-btn ion-button {
+  width: 100px;
+  display: inline-table;
 }
 </style>

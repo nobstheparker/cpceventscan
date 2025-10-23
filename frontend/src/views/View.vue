@@ -46,11 +46,15 @@
                 <li><router-link to="/attendance-records" class="sub">View Attendance Records</router-link></li>
               </ul>
             </li>
-            <li><router-link to="/Request" class="sidebar-link">Request Management</router-link></li>
-            <li><router-link to="/Notif" class="sidebar-link">Notification Management</router-link></li>
-            <li><router-link to="/Feed" class="sidebar-link">Feedback Management</router-link></li>
-            <li><router-link to="/Update" class="sidebar-link">Featured Updates</router-link></li>
-            <li><router-link to="/account-center" class="sidebar-link">Account Center</router-link></li>
+             <template v-if="admin && admin.status !== 0">
+              <li><router-link to="/Request" class="sidebar-link">Request Management</router-link></li>
+              <li><router-link to="/Notif" class="sidebar-link">Notification Management</router-link></li>
+              <li><router-link to="/Feed" class="sidebar-link">Feedback Management</router-link></li>
+              <li><router-link to="/Update" class="sidebar-link">Featured Updates</router-link></li>
+            </template>
+            <template v-if="admin && admin.status !== 2">
+              <li><router-link to="/Account-center" class="sidebar-link">Account Center</router-link></li>
+            </template>
             <li>
               <a href="javascript:void(0);" class="sidebar-link" @click="confirmLogout">
                 Log Out
@@ -61,7 +65,6 @@
 
         <!-- Main Content -->
         <div class="main-content">
-          <h3>STUDENT RECORDS</h3>
           <ion-row class="ion-align-items-center ion-justify-content-between" style="margin-bottom: 10px;">
             <ion-col size="7"></ion-col>
             <ion-col size="5">
@@ -122,7 +125,7 @@
                   <td>{{ student.sex }}</td>
                   <td>{{ student.email }}</td>
                   <td>N/A</td>
-                  <td style="display: flex;">
+                  <td style="display: flex; border: 1px solid #07055d;">
                     <ion-button
                       v-if="student.status !== 1"
                       size="small"
@@ -143,15 +146,15 @@
                     >
                       Activate
                     </ion-button>
-                    <ion-button
-                    size="small"
-                    fill="solid"
-                    style="--background: #07055d; --color: white;"
-                    expand="block"
-                    :router-link="'/attendance-logs'"
-                  >
-                    Attendance
-                  </ion-button>
+                <ion-button
+                  size="small"
+                  fill="solid"
+                  style="--background: #07055d; --color: white;"
+                  expand="block"
+                  @click="goToAttendance(student.student_id)"
+                >
+                  Attendance
+                </ion-button>
                   </td>
                 </tr>
               </tbody>
@@ -218,7 +221,24 @@ const fetchStudents = async () => {
   }
 };
 
-onMounted(() => fetchStudents());
+const admin = ref<any>(null);
+
+onMounted(async () => {
+  try {
+    const res = await axios.get('http://localhost:5000/api/check-admin-session', {
+      withCredentials: true
+    });
+
+    if (res.data.loggedIn && res.data.admin) {
+      admin.value = res.data.admin;
+    } else {
+      router.replace('/adminLogIn'); // redirect if not logged in
+    }
+  } catch (err) {
+    console.error('Session check failed:', err);
+    router.replace('/adminLogIn');
+  } fetchStudents()
+});
 
 // Computed: filtered + sorted
 const filteredStudents = computed(() => {
@@ -318,6 +338,9 @@ const confirmLogout = async () => {
     await axios.post('http://localhost:5000/api/users/admin-logout', {}, { withCredentials: true });
     router.push('/adminLogIn');
   }
+};
+const goToAttendance = (studentId: string) => {
+  router.push(`/attendance-logs/${studentId}`);
 };
 </script>
 

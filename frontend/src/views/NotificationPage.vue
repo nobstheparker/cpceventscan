@@ -60,46 +60,22 @@
 </template>
 
 <script setup lang="ts">
-import {
-  IonContent,
-  IonHeader,
-  IonPage,
-  IonTitle,
-  IonToolbar,
-  IonModal,
-  IonButton,
-  useIonRouter,
-} from "@ionic/vue";
-import { ref, computed, onMounted, onBeforeUnmount, nextTick, onUnmounted } from "vue";
+import { ref, onMounted, onUnmounted, computed } from 'vue';
 import axios from 'axios';
-
-const router = useIonRouter();
-
-// --- Date & Calendar ---
-const currentDate = ref(new Date());
-const year = computed(() => currentDate.value.getFullYear());
-const month = computed(() => currentDate.value.getMonth());
-const monthName = computed(() => {
-  const monthNames = [
-    "January", "February", "March", "April", "May", "June",
-    "July", "August", "September", "October", "November", "December",
-  ];
-  return monthNames[month.value];
-});
-const daysOfWeek = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
-const daysInMonth = computed(() => {
-  const firstDayOfMonth = new Date(year.value, month.value, 1).getDay();
-  const lastDate = new Date(year.value, month.value + 1, 0).getDate();
-  const cells: number[] = [];
-  for (let i = 0; i < firstDayOfMonth; i++) cells.push(0);
-  for (let i = 1; i <= lastDate; i++) cells.push(i);
-  return cells;
-});
-
-// --- Student & Notifications ---
-const student = ref<any>(null);
-const studentId = ref<number>(0);
-const studentCourseId = ref<number>(0);
+import Swal from 'sweetalert2';
+import {
+  IonPage,
+  IonHeader,
+  IonContent,
+  IonItem,
+  IonLabel,
+  IonButtons,
+  IonBackButton,
+  IonIcon,
+  IonText,
+  IonList,
+  IonButton
+} from '@ionic/vue';
 
 interface Notification {
   id: number;
@@ -110,9 +86,18 @@ interface Notification {
   label?: string;
 }
 
+// Logged-in student data
+const student = ref<any>(null);
+const studentId = ref<number>(0);
+const studentCourseId = ref<number>(0);
+
+// Notifications list
 const notifications = ref<Notification[]>([]);
+
+// Computed unread count
 const unreadCount = computed(() => notifications.value.filter(n => !n.read).length);
 
+// Helper to categorize notifications
 const getNotificationLabel = (createdAt: string) => {
   const notifDate = new Date(createdAt);
   const today = new Date();
@@ -120,7 +105,7 @@ const getNotificationLabel = (createdAt: string) => {
   yesterday.setDate(today.getDate() - 1);
 
   const startOfWeek = new Date(today);
-  startOfWeek.setDate(today.getDate() - today.getDay());
+  startOfWeek.setDate(today.getDate() - today.getDay()); // Sunday as start
 
   if (
     notifDate.getFullYear() === today.getFullYear() &&
@@ -141,157 +126,135 @@ const getNotificationLabel = (createdAt: string) => {
   }
 };
 
-// --- Fetch logged-in student ---
+// Fetch logged-in student info
 const fetchLoggedInStudent = async () => {
   try {
     const res = await axios.get('http://localhost:5000/api/protected', { withCredentials: true });
     student.value = res.data.student;
-    studentId.value = student.value.id;
+    studentId.value = student.value.id;          
     studentCourseId.value = student.value.course_id;
   } catch (err) {
     console.error('Failed to get logged-in student:', err);
   }
 };
 
-// --- Updates/Announcements ---
-const updates = ref<{ id: number; name: string; description: string; status: string }[]>([]);
-const fetchUpdatesForAnnouncements = async () => {
+// Fetch notifications for the logged-in student
+const fetchNotifications = async () => {
   try {
-    const res = await axios.get('http://localhost:5000/api/updates');
-    updates.value = res.data.filter((u: any) => u.status === 'Active');
-    console.log('Active updates:', updates.value);
-  } catch (error) {
-    console.error('Failed to fetch updates:', error);
+    if (!studentId.value) return;
+
+    const res = await axios.get('http://localhost:5000/api/notifications/list', {
+      params: { student_id: studentId.value }
+    });
+
+    notifications.value = (res.data || [])
+      .filter((notif: any) => {
+        const selectedStudents = Array.isArray(notif.selected_students)
+          ? notif.selected_students
+          : JSON.parse(notif.selected_students || '[]');
+
+        const selectedCourses = Array.isArray(notif.selected_courses)
+          ? notif.selected_courses
+          : JSON.parse(notif.selected_courses || '[]');
+
+        return (
+          notif.recipient_mode === 'all' ||
+          selectedStudents.includes(studentId.value) ||
+          selectedCourses.includes(studentCourseId.value)
+        );
+      })
+      .map((notif: any) => ({
+        id: notif.id,
+        title: notif.notif_type,
+        message: notif.notif_message,
+        created_at: notif.created_at,
+        read: notif.read,
+        label: getNotificationLabel(notif.created_at)
+      }));
+  } catch (err) {
+    console.error('Failed to fetch notifications:', err);
   }
 };
 
-// --- Events ---
-const events = ref<any[]>([]);
-const fetchEvents = async () => {
-  try {
-    const res = await fetch('http://localhost:5000/api/events/list');
-    if (!res.ok) throw new Error('Failed to fetch events');
-    const data = await res.json();
-    events.value = data.map((event: any) => ({
-      ...event,
-      date: event.start_date_time.slice(0, 10),
-    }));
-  } catch (error) {
-    console.error(error);
-  }
-};
-
-const getEventsForDay = (day: number) => {
-  if (day === 0) return [];
-  const dateStr = `${year.value}-${String(month.value + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
-  return events.value.filter(e => e.date === dateStr);
-};
-
-const prevMonth = () => {
-  currentDate.value = new Date(year.value, month.value - 1, 1);
-  closeDropdown();
-};
-const nextMonth = () => {
-  currentDate.value = new Date(year.value, month.value + 1, 1);
-  closeDropdown();
-};
-
-// --- Dropdown calendar ---
-const isDropdownOpen = ref(false);
-const dropdownDay = ref<number | null>(null);
-const dropdownPosition = ref<{ top: number; left: number } | null>(null);
-const dropdownDirection = ref<'left' | 'right'>('right');
-
-const closeDropdown = () => {
-  isDropdownOpen.value = false;
-  dropdownDay.value = null;
-  dropdownPosition.value = null;
-};
-
-const positionDropdown = (target: HTMLElement) => {
-  const container = target.closest('.calendar-container');
-  if (!container) return;
-  const containerRect = container.getBoundingClientRect();
-  const targetRect = target.getBoundingClientRect();
-  const containerWidth = containerRect.width;
-  const targetLeft = targetRect.left - containerRect.left;
-
-  if (targetLeft < containerWidth / 2) {
-    dropdownDirection.value = 'right';
-    dropdownPosition.value = { top: targetRect.bottom - containerRect.top + 6, left: targetLeft };
-  } else {
-    dropdownDirection.value = 'left';
-    dropdownPosition.value = { top: targetRect.bottom - containerRect.top + 6, left: targetLeft + targetRect.width };
-  }
-};
-
-const dropdownPositionStyle = computed(() => {
-  if (!dropdownPosition.value) return {};
-  if (dropdownDirection.value === 'right') {
-    return { top: `${dropdownPosition.value.top}px`, left: `${dropdownPosition.value.left}px`, right: 'auto' };
-  } else {
-    return { top: `${dropdownPosition.value.top}px`, right: `${dropdownPosition.value.left}px`, left: 'auto' };
-  }
+// Computed grouped notifications
+const groupedNotifications = computed(() => {
+  const groups: Record<string, Notification[]> = {};
+  notifications.value.forEach(notif => {
+    const label = notif.label || 'Older';
+    if (!groups[label]) groups[label] = [];
+    groups[label].push(notif);
+  });
+  return groups;
 });
 
-const handleDayClick = (day: number, event: MouseEvent | KeyboardEvent) => {
-  event.stopPropagation();
-  const dayEvents = getEventsForDay(day);
-  if (day === 0 || dayEvents.length === 0) {
-    closeDropdown();
-    return;
+// Open a notification (mark as read)
+const openNotification = async (notification: Notification) => {
+  if (!notification.read) {
+    try {
+      await axios.put(
+        `http://localhost:5000/api/notifications/mark-read/${notification.id}`,
+        { student_id: studentId.value }
+      );
+      notification.read = true;
+    } catch (err) {
+      console.error(err);
+      Swal.fire('Error', 'Failed to mark notification as read', 'error');
+      return;
+    }
   }
-  if (isDropdownOpen.value && dropdownDay.value === day) {
-    closeDropdown();
-    return;
-  }
-  dropdownDay.value = day;
-  isDropdownOpen.value = true;
-  nextTick(() => {
-    positionDropdown(event.currentTarget as HTMLElement);
+
+  Swal.fire({
+    icon: 'info',
+    title: notification.title,
+    text: notification.message,
+    didOpen: () => {
+      document.body.classList.remove('swal2-height-auto');
+      document.documentElement.classList.remove('swal2-height-auto');
+    }
   });
 };
 
-// --- Modal for event ---
-const selectedEvent = ref<any>(null);
-const modalOpen = ref(false);
-
-const selectEvent = (event: any) => {
-  selectedEvent.value = event;
-  modalOpen.value = true;
-  closeDropdown();
+const goTo = (path: string) => {
+  window.location.href = path;
 };
 
-const closeModal = () => {
-  modalOpen.value = false;
-  selectedEvent.value = null;
-};
-
-// --- Click outside & Esc key ---
-const onClickOutside = (event: MouseEvent) => {
-  const dropdown = document.querySelector('.events-dropdown');
-  if (dropdown && !dropdown.contains(event.target as Node)) closeDropdown();
-};
-const onKeyDown = (event: KeyboardEvent) => {
-  if (event.key === 'Escape') closeDropdown();
-};
-
-// --- Session check ---
-const checkSession = async () => {
+// Mark all notifications as read
+const markAllRead = async () => {
   try {
-    const response = await axios.get('http://localhost:5000/api/protected', { withCredentials: true });
-    if (response.data.message === 'Authenticated') {
-      router.push('/');
-    } else {
-      router.push('/login');
-    }
-  } catch {
-    router.push('/login');
+    await Promise.all(
+      notifications.value.map(n =>
+        axios.put(`http://localhost:5000/api/notifications/mark-read/${n.id}`, {
+          student_id: studentId.value
+        })
+      )
+    );
+    notifications.value.forEach(n => (n.read = true));
+
+    Swal.fire({
+      icon: 'success',
+      title: 'All notifications marked as read!',
+      didOpen: () => {
+        document.body.classList.remove('swal2-height-auto');
+        document.documentElement.classList.remove('swal2-height-auto');
+      }
+    });
+  } catch (err) {
+    console.error(err);
+    Swal.fire('Error', 'Failed to mark all notifications as read', 'error');
   }
 };
 
-// --- Notifications ---
+// Format date nicely
+const formatDate = (dateStr: string | null | undefined) => {
+  if (!dateStr) return '';
+  const date = new Date(dateStr);
+  if (isNaN(date.getTime())) return '';
+  return date.toLocaleString('en-US', { dateStyle: 'medium', timeStyle: 'short' });
+};
+
+// ----- Auto-refresh interval -----
 let refreshInterval: number | undefined;
+
 const refreshNotifications = async () => {
   if (!studentId.value) return;
 
@@ -309,9 +272,11 @@ const refreshNotifications = async () => {
         ? notif.selected_courses
         : JSON.parse(notif.selected_courses || '[]');
 
-      return notif.recipient_mode === 'all'
-        || selectedStudents.includes(studentId.value)
-        || selectedCourses.includes(studentCourseId.value);
+      return (
+        notif.recipient_mode === 'all' ||
+        selectedStudents.includes(studentId.value) ||
+        selectedCourses.includes(studentCourseId.value)
+      );
     });
 
     notifications.value = filtered.map((notif: any) => ({
@@ -327,64 +292,20 @@ const refreshNotifications = async () => {
   }
 };
 
-// --- Event navigation ---
-const handleApplyClick = () => {
-  modalOpen.value = false;
-  const eventName = selectedEvent.value.event_name;
-  const eventDate = selectedEvent.value.start_date_time;
-  const eventId = selectedEvent.value.id;
-
-  setTimeout(() => {
-    router.push({
-      path: '/application-form',
-      query: { id: eventId, name: eventName, date: eventDate }
-    });
-  }, 300);
-};
-
-const handleAbsenceClick = () => {
-  modalOpen.value = false;
-  const eventName = selectedEvent.value.event_name;
-  const eventDate = selectedEvent.value.start_date_time;
-  const eventId = selectedEvent.value.id;
-
-  setTimeout(() => {
-    router.push({
-      path: '/absence-request-form',
-      query: { id: eventId, name: eventName, date: eventDate }
-    });
-  }, 300);
-};
-
-// --- Accessibility ---
-const getAriaLabel = (day: number) => {
-  if (day === 0) return 'Empty day';
-  const evts = getEventsForDay(day);
-  return `${day}${evts.length ? ', has event(s)' : ''}`;
-};
-
-// --- Lifecycle ---
+// On component mount
 onMounted(async () => {
   await fetchLoggedInStudent();
-  fetchEvents();
-  checkSession();
-  fetchUpdatesForAnnouncements();
-  await refreshNotifications(); // fetch immediately
-  document.addEventListener('click', onClickOutside);
-  document.addEventListener('keydown', onKeyDown);
+  await fetchNotifications();
+
+  // Start auto-refresh every 10 seconds
   refreshInterval = window.setInterval(refreshNotifications, 10000);
 });
 
+// Clear interval on unmount
 onUnmounted(() => {
   if (refreshInterval) clearInterval(refreshInterval);
 });
-
-onBeforeUnmount(() => {
-  document.removeEventListener('click', onClickOutside);
-  document.removeEventListener('keydown', onKeyDown);
-});
 </script>
-
 
 
 <style scoped>

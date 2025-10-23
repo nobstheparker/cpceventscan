@@ -375,8 +375,7 @@ const performFinalCaptureAndVerify = async () => {
     } else {
       step.value = 'failed';
       await Swal.fire({
-        title: 'Verification Failed ❌',
-        text: `Confidence: ${data.confidence ?? 0}`,
+        title: 'Verification Failed',
         icon: 'error',
         didOpen: () => {
           document.body.classList.remove('swal2-height-auto');

@@ -310,3 +310,37 @@ exports.afternoonTimeOut = async (req, res) => {
     res.status(500).json({ error: err.message });
   }
 };
+
+// ✅ Mark trivia as missed (only for this student)
+exports.markTriviaMissed = async (req, res) => {
+  try {
+    const { event_id } = req.params;
+    const { studentId, period } = req.body; // period = 'morning' or 'afternoon'
+
+    if (!studentId || !event_id || !period) {
+      return res.status(400).json({ error: 'Missing event_id, studentId, or period' });
+    }
+
+    const [records] = await attendanceModel.getByEvent(event_id, studentId);
+    if (records.length === 0) {
+      return res.status(404).json({ error: 'Attendance not found for this student.' });
+    }
+
+    const attendanceId = records[0].attendance_id;
+
+    if (period === 'morning') {
+      await attendanceModel.updateMorningTriviaMissed(attendanceId);
+    } else if (period === 'afternoon') {
+      await attendanceModel.updateAfternoonTriviaMissed(attendanceId);
+    } else {
+      return res.status(400).json({ error: 'Invalid period value' });
+    }
+
+    res.json({ message: `Trivia marked as missed for ${period} period (student ${studentId}).` });
+  } catch (err) {
+    console.error('❌ Error marking trivia missed:', err);
+    res.status(500).json({ error: err.message });
+  }
+};
+
+

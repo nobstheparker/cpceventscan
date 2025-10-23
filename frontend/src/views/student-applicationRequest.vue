@@ -646,7 +646,7 @@ table {
     --padding-start:0px
 }
 .bootstrap-modal {
-  --height: 450px !important;
+  --height: auto !important;
   padding: 10px;
 }
 .bootstrap-modal select {

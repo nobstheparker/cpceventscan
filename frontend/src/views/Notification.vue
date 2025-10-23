@@ -52,19 +52,15 @@
                 <li><router-link to="/attendance-records" class="sub">View Attendance Records</router-link></li>
               </ul>
             </li>
-            <li>
-              <router-link to="/Request" class="sidebar-link">Request Management</router-link>
-            </li>
-            <li>
-              <router-link to="/Notif" class="sidebar-link">Notification Management</router-link>
-            </li>
-            <li>
-              <router-link to="/Feed" class="sidebar-link">Feedback Management</router-link>
-            </li>
-            <li>
-              <router-link to="/Update" class="sidebar-link">Featured Updates</router-link>
-            </li>
-            <li><router-link to="/account-center" class="sidebar-link">Account Center</router-link></li>
+             <template v-if="admin && admin.status !== 0">
+              <li><router-link to="/Request" class="sidebar-link">Request Management</router-link></li>
+              <li><router-link to="/Notif" class="sidebar-link">Notification Management</router-link></li>
+              <li><router-link to="/Feed" class="sidebar-link">Feedback Management</router-link></li>
+              <li><router-link to="/Update" class="sidebar-link">Featured Updates</router-link></li>
+            </template>
+            <template v-if="admin && admin.status !== 2">
+              <li><router-link to="/Account-center" class="sidebar-link">Account Center</router-link></li>
+            </template>
             <li>
               <router-link to="/adminLogIn" class="sidebar-link" @click="confirmLogout">
                 Log Out
@@ -75,13 +71,6 @@
 
         <!-- Main Content -->
         <div class="main-content">
-          <h2>NOTIFICATION MANAGEMENT</h2>
-          <div style="display: flex; justify-content: flex-end; gap: 15px; margin-top: 20px;">
-            <ion-button
-              style="--background: green; --color: white; font-weight: 700; --border-radius: 5px; width: 300px;"
-              @click="openCreateModal">Add New Notification
-            </ion-button>
-          </div>
 
           <!-- Modal -->
           <ion-modal :is-open="isModalOpen" @didDismiss="closeModal">
@@ -96,7 +85,7 @@
                   style="width:100%; padding:6px; border:1px solid #b1b1b2; border-radius:4px; background-color:white; font-size:14px; color:black; margin-bottom:5px;" />
 
                 <label><b>Message:</b></label>
-                <textarea v-model="newNotification.message" placeholder="Enter message"
+                <textarea auto-grow="true" v-model="newNotification.message" placeholder="Enter message"
                   style="width: 100%; padding: 6px; border: 1px solid #b1b1b2; border-radius: 4px; background-color: white; font-size: 14px; color: black; min-height: 40px; max-height: 180px; overflow-y: auto; resize: vertical;">
                 </textarea>
 
@@ -179,6 +168,13 @@
               </ion-col>
             </ion-row>
 
+            <div style="display: flex; justify-content: flex-end; gap: 15px; margin:5px 0;">
+            <ion-button
+              style="--background: green; --color: white; font-weight: 700; --border-radius: 5px; width: 250px; margin-bottom: 5px;"
+              @click="openCreateModal"> + Add New Notification
+            </ion-button>
+          </div>
+
             <div style="overflow-x:auto;">
               <table style="width:100%; border-collapse: collapse; font-size:14px;">
                 <thead>
@@ -196,7 +192,7 @@
                     <td>{{ notif.notif_message }}</td>
                     <td>{{ formatDate(notif.created_at) }}</td>
                     <td>{{ formatDate(notif.updated_at) }}</td>
-                    <td>
+                    <td style="display: flex; gap: 6px; justify-content: center; align-items: center; border: 1px solid #07055d !important;">
                       <ion-button size="small" fill="solid" style="--background:#F1C204; --color:black; --border-radius:3px; font-weight:600;" expand="block"
                         @click="openEditModal(notif)">Edit</ion-button>
                       <ion-button size="small" fill="solid" style="--background:#ca0404; --color:white; --border-radius:3px; font-weight:600;" expand="block"
@@ -309,7 +305,25 @@ const fetchNotifications = async () => {
   try { const res = await axios.get('http://localhost:5000/api/notifications/list-all'); notificationsList.value = Array.isArray(res.data) ? res.data : []; } catch (err) { console.error(err); notificationsList.value=[]; }
 };
 
-onMounted(() => { fetchCourses(); fetchStudents(); fetchNotifications(); });
+const admin = ref<any>(null);
+
+onMounted(async () => {
+  try {
+    const res = await axios.get('http://localhost:5000/api/check-admin-session', {
+      withCredentials: true
+    });
+
+    if (res.data.loggedIn && res.data.admin) {
+      admin.value = res.data.admin;
+    } else {
+      router.replace('/adminLogIn'); // redirect if not logged in
+    }
+  } catch (err) {
+    console.error('Session check failed:', err);
+    router.replace('/adminLogIn');
+  }
+  fetchCourses(); fetchStudents(); fetchNotifications(); 
+});
 
 // Computed
 const filteredStudents = computed(() => {
@@ -680,7 +694,7 @@ thead {
 
 thead th {
   padding: 10px;
-  text-align: left;
+  text-align: center;
   white-space: nowrap;
 }
 tbody{

@@ -80,7 +80,7 @@ const getMyabsense= async (req, res) => {
 FROM student_request sr
 LEFT JOIN absence_requests ab ON sr.absence_requests_id = ab.absence_requests_id
 LEFT JOIN events e ON ab.id = e.id
-WHERE sr.student_id = ?
+WHERE sr.student_id = ? 
   AND sr.absence_requests_id IS NOT NULL
 ORDER BY sr.date_requested DESC;
     `;

@@ -24,7 +24,7 @@
         <!-- FAQ Section as Accordion -->
         <ion-card class="faq-section">
           <ion-card-header>
-            <ion-card-title>❓ FAQ (Frequently Asked Questions)</ion-card-title>
+            <ion-card-title>❓ System Guide</ion-card-title>
           </ion-card-header>
           <ion-card-content>
             <ion-accordion-group>
@@ -113,10 +113,15 @@ const goTo = (path: string) => {
 
 // --- FAQ List ---
 const faqs = ref([
-  { id: 1, value: 'attendance', question: 'How do I scan my attendance?', answer: 'To scan your attendance, open the app, go to the Attendance section, and scan the QR code provided by your class officer.' },
-  { id: 2, value: 'missed-time', question: 'What should I do if I missed time-in or time-out?', answer: 'Report it to your class officer or SAO office immediately for manual correction.' },
-  { id: 3, value: 'absence', question: 'How do I request an absence?', answer: 'Submit your absence request via the app or contact the SAO office directly.' },
-  { id: 4, value: 'payment', question: 'How do I pay my fines?', answer: 'Fines can be paid at the school cashier or online. Keep a receipt.' },
+  { id: 1, value: 'absence', question: 'How to Submit an Absence Request?', answer: 'To submit an absence request, first log in to your account. On the homepage, click any date in the monthly event calendar to view the event details, then scroll to the bottom of the event details and click the “Absence Request” button. Fill out the form with the required information and submit your request. After submitting, wait for the admin’s response and check the status of your request anytime on your Profile Page under Absence Requests.'},
+  { id: 2, value: 'volunteer', question: 'How to Submit Volunteer Application?', answer: 'To submit a volunteer application, first log in to your account. On the homepage, click any date in the monthly event calendar to view the event details, then scroll to the bottom of the event details and click the “Volunteer Application” button. Fill out the form with the required information and submit your application. After submitting, wait for the admin’s response and check the status of your application anytime on your Profile Page under Volunteer Applications.' },
+  { id: 3, value: 'attendance', question: 'How to Record Attendance?', answer: 'To record attendance, first log in to your account and ensure that your Face ID is registered. To proceed, scan the event’s QR code provided by the SSG officers. You will then be directed to the Attendance Page, where you can record your attendance by clicking the appropriate Attendance button — Time In, Mid Event, or Time Out. Perform facial verification to confirm your identity, and make sure you are physically present at the event location to successfully record your attendance.' },
+  { id: 4, value: 'face recognition', question: 'How to Register your Face ID?', answer: 'To register your Face ID, log in to your account and go to your Profile Page. From there, select the Face ID Registration option. Follow the instructions on the screen to register your face by allowing camera access and positioning your face within the frame until the system successfully captures your facial data. Once completed, your Face ID will be saved and used for attendance verification during events.' },
+  { id: 5, value: 'password', question: 'How to Change Password?', answer: 'To change your password, log in to your account and go to your Profile Page. Select Account Security, then click the edit icon in the Password section. Enter your current password, followed by your new password, and confirm it to save the changes. Once updated, your new password will take effect immediately, and you can use it the next time you log in.' },
+  { id: 6, value: 'personal info', question: 'How to Update my Personal Information?', answer: 'To edit your profile information, log in to your account and go to your Profile Page. Select the Personal Info section, then click the Edit button to update your details such as name, contact information, or other personal data. After making the necessary changes, click Save to apply the updates. Your profile information will be successfully updated once saved.' },
+  { id: 7, value: 'account', question: 'How to Secure my Account?', answer: 'To secure your account, it is highly recommended to enable Two-Factor Authentication (2FA). By turning on 2FA, your account gains an extra layer of protection. When you log in on a new device, the system will send a verification code to your registered email, which you must enter to access your account. This ensures that only you can log in, even if someone else knows your password.' },
+  { id: 8, value: 'settleattendance', question: 'How to settle my incomplete attendance?', answer: 'To settle incomplete attendance, log in to your account and check your Attendance Records on your Profile Page to identify any events marked as Incomplete. Once confirmed, you must personally visit the SAO Office to settle your attendance. Inform the staff about your incomplete record and provide the necessary details or proof of attendance. The SAO Office will then review your case and update your attendance status once verified.' },
+  
 ]);
 
 // --- Search Functionality ---

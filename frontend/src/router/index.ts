@@ -254,7 +254,7 @@ const routes: Array<RouteRecordRaw> = [
     component: TwofaPage
   },
   {
-  path: '/attendance-logs',
+  path: '/attendance-logs/:id?',
   name: 'AttendanceLogs',
   component: () => import('@/views/AttendanceLogs.vue')
 }

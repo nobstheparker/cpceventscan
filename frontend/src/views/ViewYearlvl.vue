@@ -44,11 +44,15 @@
                 <li><router-link to="/attendance-records" class="sub">View Attendance Records</router-link></li>
               </ul>
             </li>
-            <li><router-link to="/Request" class="sidebar-link">Request Management</router-link></li>
-            <li><router-link to="/Notif" class="sidebar-link">Notification Management</router-link></li>
-            <li><router-link to="/Feed" class="sidebar-link">Feedback Management</router-link></li>
-            <li><router-link to="/Update" class="sidebar-link">Featured Updates</router-link></li>
-            <li><router-link to="/account-center" class="sidebar-link">Account Center</router-link></li>
+             <template v-if="admin && admin.status !== 0">
+              <li><router-link to="/Request" class="sidebar-link">Request Management</router-link></li>
+              <li><router-link to="/Notif" class="sidebar-link">Notification Management</router-link></li>
+              <li><router-link to="/Feed" class="sidebar-link">Feedback Management</router-link></li>
+              <li><router-link to="/Update" class="sidebar-link">Featured Updates</router-link></li>
+            </template>
+            <template v-if="admin && admin.status !== 2">
+              <li><router-link to="/Account-center" class="sidebar-link">Account Center</router-link></li>
+            </template>
             <li>
                 <a href="javascript:void(0);" class="sidebar-link" @click="confirmLogout">
                     Log Out
@@ -58,7 +62,6 @@
         </div>
         <!-- Main Content -->
         <div class="main-content">
-          <ion-title class="regCourse">Registered Year Level</ion-title>
           <ion-content class="ion-padding" style="--background: transparent;">
             <ion-row class="ion-align-items-center ion-justify-content-between" style="margin-bottom: 10px;">
               <ion-col size="7">
@@ -78,9 +81,6 @@
               <table style="width: 100%; border-collapse: collapse; font-size: 14px;">
                 <thead>
                   <tr>
-                    <th @click="sortData('YearID')" style="cursor: pointer;">
-                      Year ID <span v-if="sortColumn === 'YearID'">{{ sortOrder === 'asc' ? '▲' : '▼' }}</span>
-                    </th>
                     <th @click="sortData('CourseCode')" style="cursor: pointer;">
                       Course Code <span v-if="sortColumn === 'CourseCode'">{{ sortOrder === 'asc' ? '▲' : '▼' }}</span>
                     </th>
@@ -92,7 +92,6 @@
                 </thead>
                 <tbody>
                   <tr v-for="item in paginatedYears" :key="item.YearID">
-                    <td>{{ item.YearID }}</td>
                     <td>{{ item.CourseCode }}</td>
                     <td>{{ item.YearLvl }}</td>
                     <td class="act-btn" style="display: flex;">
@@ -182,7 +181,7 @@ import {
   IonInput,
 } from '@ionic/vue';
 import { notifications } from 'ionicons/icons';
-import { ref, computed } from 'vue';
+import { ref, computed, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
 import axios from 'axios';
 import Swal from 'sweetalert2';
@@ -357,6 +356,24 @@ const sortData = (column: keyof YearLevel) => {
 const filterData = () => {
   currentPage.value = 1;
 };
+const admin = ref<any>(null);
+
+onMounted(async () => {
+  try {
+    const res = await axios.get('http://localhost:5000/api/check-admin-session', {
+      withCredentials: true
+    });
+
+    if (res.data.loggedIn && res.data.admin) {
+      admin.value = res.data.admin;
+    } else {
+      router.replace('/adminLogIn'); 
+    }
+  } catch (err) {
+    console.error('Session check failed:', err);
+    router.replace('/adminLogIn');
+  }
+});
 </script>
 
 <style scoped>
@@ -670,6 +687,7 @@ table th {
 
 .bootstrap-modal .modal-body {
   padding: 1rem;
+  padding-top: 0;
 }
 
 .bootstrap-modal .modal-footer {
@@ -692,7 +710,7 @@ table th {
     --padding-start:0px
 }
 .bootstrap-modal {
-  --height: 400px !important;
+  --height: 360px !important;
 }
 .bootstrap-modal select {
   width: 100%;

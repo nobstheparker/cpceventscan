@@ -44,11 +44,15 @@
                 <li><router-link to="/attendance-records" class="sub">View Attendance Records</router-link></li>
               </ul>
             </li>
-            <li><router-link to="/Request" class="sidebar-link">Request Management</router-link></li>
-            <li><router-link to="/Notif" class="sidebar-link">Notification Management</router-link></li>
-            <li><router-link to="/Feed" class="sidebar-link">Feedback Management</router-link></li>
-            <li><router-link to="/Update" class="sidebar-link">Featured Updates</router-link></li>
-            <li><router-link to="/account-center" class="sidebar-link">Account Center</router-link></li>
+             <template v-if="admin && admin.status !== 0">
+              <li><router-link to="/Request" class="sidebar-link">Request Management</router-link></li>
+              <li><router-link to="/Notif" class="sidebar-link">Notification Management</router-link></li>
+              <li><router-link to="/Feed" class="sidebar-link">Feedback Management</router-link></li>
+              <li><router-link to="/Update" class="sidebar-link">Featured Updates</router-link></li>
+            </template>
+            <template v-if="admin && admin.status !== 2">
+              <li><router-link to="/Account-center" class="sidebar-link">Account Center</router-link></li>
+            </template>
              <li>
                 <a href="javascript:void(0);" class="sidebar-link" @click="confirmLogout">
                     Log Out
@@ -58,7 +62,6 @@
           </ul>
         </div>
         <div class="main-content">
-          <ion-title class="regCourse">Registered Courses</ion-title>
           <ion-content class="ion-padding" style="--background: transparent;">
             <ion-row class="ion-align-items-center ion-justify-content-between" style="margin-bottom: 10px;">
               <ion-col size="7">
@@ -78,10 +81,6 @@
               <table style="width: 100%; border-collapse: collapse; font-size: 14px;">
                 <thead>
                   <tr>
-                    <th @click="sortData('course_id')">
-                      Course ID
-                      <span v-if="sortColumn === 'course_id'">{{ sortOrder === 'asc' ? '▲' : '▼' }}</span>
-                    </th>
                     <th @click="sortData('course_code')">
                       Course Code
                       <span v-if="sortColumn === 'course_code'">{{ sortOrder === 'asc' ? '▲' : '▼' }}</span>
@@ -95,7 +94,6 @@
                 </thead>
                 <tbody>
                   <tr v-for="course in paginatedCourse" :key="course.course_id">
-                    <td>{{ course.course_id }}</td>
                     <td>{{ course.course_code }}</td>
                     <td>{{ course.course_name }}</td>
                     <td class="action-btn">
@@ -192,7 +190,7 @@ import {
 } from '@ionic/vue';
 import { notifications } from 'ionicons/icons';
 import Swal from 'sweetalert2';
-import { computed, ref } from 'vue';
+import { computed, ref, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
 import axios from 'axios';
 
@@ -352,6 +350,24 @@ const fetchCourses = async () => {
   }
 };
 fetchCourses();
+const admin = ref<any>(null);
+
+onMounted(async () => {
+  try {
+    const res = await axios.get('http://localhost:5000/api/check-admin-session', {
+      withCredentials: true
+    });
+
+    if (res.data.loggedIn && res.data.admin) {
+      admin.value = res.data.admin;
+    } else {
+      router.replace('/adminLogIn'); // redirect if not logged in
+    }
+  } catch (err) {
+    console.error('Session check failed:', err);
+    router.replace('/adminLogIn');
+  }
+});
 </script>
 
 <style scoped>
@@ -372,7 +388,7 @@ thead {
 
 thead th {
   padding: 10px;
-  text-align: left;
+  text-align: center;
   white-space: nowrap;
 }
 tbody{
@@ -384,7 +400,7 @@ table td {
   color: black;
   padding: 10px;
   border-bottom: 1px solid #ccc; 
-  border: 2px solid #07055d;
+  border: 2px solid #07055d !important;
 }
 ion-button.edit{
     background: #07055d;
@@ -623,7 +639,7 @@ tbody{
 }
 .bootstrap-modal .modal-dialog {
   width: 100%;
-  height: 100%;
+  height: 800%;
 }
 
 .bootstrap-modal .modal-content {
@@ -666,6 +682,7 @@ tbody{
 
 .bootstrap-modal .modal-body {
   padding: 1rem;
+  padding-top: 0;
 }
 
 .bootstrap-modal .modal-footer {
@@ -688,7 +705,7 @@ tbody{
     --padding-start:0px
 }
 .bootstrap-modal {
-  --height: 400px !important;
+  --height: 352px !important;
 }
 </style>
 

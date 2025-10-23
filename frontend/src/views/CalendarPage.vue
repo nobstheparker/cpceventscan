@@ -93,7 +93,7 @@ const fetchEvents = async () => {
     const response = await axios.get('http://localhost:5000/api/events/list');
     events.value = response.data.map((event: any) => ({
       dateRange: formatEventDateRange(event.start_date_time, event.end_date_time),
-      description: event.event_description || event.eventName,
+      description: event.event_name,
     }));
   } catch (error) {
     console.error('Failed to fetch events:', error);
@@ -220,7 +220,7 @@ ion-content {
   padding-left: 0 !important;
   padding-right: 0 !important;
   display: block;
-  height: max-content;
+  height: 100%;
 }
 
 .form-container {

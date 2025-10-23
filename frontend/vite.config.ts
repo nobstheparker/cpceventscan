@@ -1,10 +1,10 @@
 /// <reference types="vitest" />
 
-import legacy from '@vitejs/plugin-legacy';
-import vue from '@vitejs/plugin-vue';
-import path from 'path';
-import { defineConfig } from 'vite';
-import { VitePWA } from 'vite-plugin-pwa';
+import legacy from '@vitejs/plugin-legacy'
+import vue from '@vitejs/plugin-vue'
+import path from 'path'
+import { defineConfig } from 'vite'
+import { VitePWA } from 'vite-plugin-pwa'
 
 // https://vitejs.dev/config/
 export default defineConfig({
@@ -13,6 +13,10 @@ export default defineConfig({
     legacy(),
     VitePWA({
       registerType: 'autoUpdate',
+      workbox: {
+        // ✅ Increase cache size limit from default 2 MB → 10 MB
+        maximumFileSizeToCacheInBytes: 10 * 1024 * 1024,
+      },
       manifest: {
         name: 'CPC Eventscan',
         short_name: 'cpceventscan',
@@ -24,16 +28,16 @@ export default defineConfig({
           {
             src: 'assets/icons/icon-192x192.png',
             sizes: '192x192',
-            type: 'image/png'
+            type: 'image/png',
           },
           {
             src: 'assets/icons/icon-512x512.png',
             sizes: '512x512',
-            type: 'image/png'
-          }
-        ]
-      }
-    })
+            type: 'image/png',
+          },
+        ],
+      },
+    }),
   ],
   resolve: {
     alias: {
@@ -42,6 +46,6 @@ export default defineConfig({
   },
   test: {
     globals: true,
-    environment: 'jsdom'
-  }
+    environment: 'jsdom',
+  },
 })

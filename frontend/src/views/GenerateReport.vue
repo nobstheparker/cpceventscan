@@ -6,11 +6,6 @@
           <div class="admin-logo">
             <img src="../../public/img/cpclogo.jpg" alt="CPC Logo" />
           </div>
-          <div class="toolbar-icons">
-            <ion-button fill="clear" size="small">
-              <ion-icon :icon="notifications" slot="icon-only"></ion-icon>
-            </ion-button>
-          </div>
         </div>
       </ion-toolbar>
     </ion-header>
@@ -50,11 +45,15 @@
                 <li><router-link to="/attendance-records" class="sub">View Attendance Records</router-link></li>
               </ul>
             </li>
-            <li><router-link to="/Request" class="sidebar-link">Request Management</router-link></li>
-            <li><router-link to="/Notif" class="sidebar-link">Notification Management</router-link></li>
-            <li><router-link to="/Feed" class="sidebar-link">Feedback Management</router-link></li>
-            <li><router-link to="/Update" class="sidebar-link">Featured Updates</router-link></li>
-            <li><router-link to="/account-center" class="sidebar-link">Account Center</router-link></li>
+            <template v-if="admin && admin.status !== 0">
+              <li><router-link to="/Request" class="sidebar-link">Request Management</router-link></li>
+              <li><router-link to="/Notif" class="sidebar-link">Notification Management</router-link></li>
+              <li><router-link to="/Feed" class="sidebar-link">Feedback Management</router-link></li>
+              <li><router-link to="/Update" class="sidebar-link">Featured Updates</router-link></li>
+            </template>
+            <template v-if="admin && admin.status !== 2">
+              <li><router-link to="/Account-center" class="sidebar-link">Account Center</router-link></li>
+            </template>
              <li>
                 <a href="javascript:void(0);" class="sidebar-link" @click="confirmLogout">
                     Log Out
@@ -75,7 +74,6 @@
                     <th>Event Name</th>
                     <th>Date</th>
                     <th>Total Attendees</th>
-                    <th>Total Absences</th>
                     <th>Incomplete Attendance</th>
                     <th>Feedbacks</th>
                     <th>Event Status</th>
@@ -86,7 +84,6 @@
                     <td>{{ eventName }}</td>
                     <td>{{ eventDate }}</td>
                     <td>{{ totalAttendees }}</td>
-                    <td>{{ totalAbsences }}</td>
                     <td>{{ incompleteAttendance }}</td>
                     <td>{{ feedbacks }}</td>
                     <td>{{ eventStats }}</td>
@@ -97,14 +94,14 @@
 
             <!-- Analytics Row 1 -->
             <div class="analytics-row" style="margin-top:16px;">
-              <div class="analytics-card">
+              <!-- <div class="analytics-card">
                 <div class="card-header">Average Time In</div>
                 <div class="card-body">{{ avgTimeIn || '-' }}</div>
               </div>
               <div class="analytics-card">
                 <div class="card-header">Average Time-outs</div>
                 <div class="card-body">{{ avgTimeOut || '-' }}</div>
-              </div>
+              </div> -->
               <div class="analytics-card">
                 <div class="card-header">Complete Attendance</div>
                 <div class="card-body">{{ completeAttendance }}</div>
@@ -135,25 +132,10 @@
               </div>
             </div>
 
-            <!-- Program Attendance Rate -->
+            <!-- Program Attendance Rate as Bar Chart -->
             <h5 style="margin-top:14px;">Program Attendance Rate</h5>
-            <div class="analytics-row" style="margin-top:8px;">
-              <div class="analytics-card">
-                <div class="card-header">BSIT</div>
-                <div class="card-body">{{ programRates.BSIT }}%</div>
-              </div>
-              <div class="analytics-card">
-                <div class="card-header">BSED</div>
-                <div class="card-body">{{ programRates.BSED }}%</div>
-              </div>
-              <div class="analytics-card">
-                <div class="card-header">BEED</div>
-                <div class="card-body">{{ programRates.BEED }}%</div>
-              </div>
-              <div class="analytics-card">
-                <div class="card-header">BSHM</div>
-                <div class="card-body">{{ programRates.BSHM }}%</div>
-              </div>
+            <div style="background-color:#fff; padding:16px; border-radius:10px; margin-top:8px;">
+              <canvas id="programAttendanceChart"></canvas>
             </div>
           </div>
         </div>
@@ -169,16 +151,18 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue';
+import { ref, onMounted, watch } from 'vue';
 import { useRouter } from 'vue-router';
 import Swal from 'sweetalert2';
-import { IonButton, IonContent, IonHeader, IonIcon, IonPage, IonText, IonToolbar } from '@ionic/vue';
-import { notifications } from 'ionicons/icons';
+import { Chart, registerables } from 'chart.js';
 import axios from 'axios';
+Chart.register(...registerables);
 
 const router = useRouter();
 
-/* Sidebar toggles */
+/* =========================
+   ✅ Sidebar Toggles
+========================= */
 const showStudentMenu = ref(false);
 const showAcadMenu = ref(false);
 const showEventMenu = ref(false);
@@ -186,7 +170,9 @@ const toggleStudentMenu = () => (showStudentMenu.value = !showStudentMenu.value)
 const toggleAcadMenu = () => (showAcadMenu.value = !showAcadMenu.value);
 const toggleEventMenu = () => (showEventMenu.value = !showEventMenu.value);
 
-/* Analytics state */
+/* =========================
+   ✅ Analytics State
+========================= */
 const eventName = ref('');
 const eventDate = ref('');
 const totalAttendees = ref(0);
@@ -202,19 +188,12 @@ const attendanceRate = ref(0);
 const missedTimeIns = ref(0);
 const missedTimeOuts = ref(0);
 const missedMidChecks = ref(0);
-
-/* Program rates */
-const programRates = ref({
-  BSIT: 0,
-  BSED: 0,
-  BEED: 0,
-  BSHM: 0
-});
-
-/* AttendanceDetails (hidden, used for calculations) */
+const programRates = ref({ BSIT: 0, BSED: 0, BEED: 0, BSHM: 0 });
 const attendanceDetails = ref<any[]>([]);
 
-/* Helpers */
+/* =========================
+   ✅ Helper Functions
+========================= */
 function parseTimeToMinutes(t: string | null) {
   if (!t) return null;
   const ampmMatch = t.match(/(\d{1,2}):(\d{2})(?::\d{2})?\s*([AaPp][Mm])/);
@@ -243,7 +222,7 @@ function formatMinutesToTime(mins: number) {
   const ampm = h24 >= 12 ? 'PM' : 'AM';
   let h12 = h24 % 12;
   if (h12 === 0) h12 = 12;
-  return `${String(h12).padStart(2,'0')}:${String(m).padStart(2,'0')} ${ampm}`;
+  return `${String(h12).padStart(2, '0')}:${String(m).padStart(2, '0')} ${ampm}`;
 }
 
 function programCodeFromProgYearSec(s: string | undefined) {
@@ -252,76 +231,236 @@ function programCodeFromProgYearSec(s: string | undefined) {
   return parts[0] || '';
 }
 
-/* Fetch and compute analytics */
+function formatTimeSafe(t: string | null | undefined) {
+  if (!t || t === 'null' || t === 'undefined') return null;
+  return t;
+}
+
+function parseDateSafe(dt: string | null | undefined) {
+  if (!dt) return null;
+  const date = new Date(dt);
+  return isNaN(date.getTime()) ? null : date;
+}
+
+/* =========================
+   ✅ Chart
+========================= */
+let programChart: Chart | null = null;
+
+function renderProgramChart() {
+  const ctx = document.getElementById('programAttendanceChart') as HTMLCanvasElement;
+  if (!ctx) return;
+
+  ctx.style.height = '250px';
+  if (programChart) programChart.destroy();
+
+  programChart = new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels: Object.keys(programRates.value),
+      datasets: [
+        {
+          label: 'Attendance Rate (%)',
+          data: Object.values(programRates.value),
+          backgroundColor: ['#000000', '#2196f3', '#ffeb3b', '#ff9800'],
+          borderColor: '#333',
+          borderWidth: 1,
+        },
+      ],
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: { display: false },
+        tooltip: { enabled: true },
+      },
+      scales: {
+        y: { beginAtZero: true, max: 100, title: { display: true, text: 'Rate (%)' } },
+      },
+    },
+  });
+}
+
+watch(programRates, () => renderProgramChart(), { deep: true });
+
+/* =========================
+   ✅ Fetch & Compute Analytics
+========================= */
 onMounted(async () => {
   const eventId = window.location.pathname.split('/').pop();
   if (!eventId) return;
+
   try {
     const res = await axios.get(`http://localhost:5000/api/attendance/details/${eventId}`);
     const payload = res.data;
-    attendanceDetails.value = payload.attendanceDetails ?? [];
+    const rawList = payload.attendanceDetails ?? [];
 
-    if (!attendanceDetails.value.length) return;
+    attendanceDetails.value = rawList.map((d: any) => {
+      const timeIn = formatTimeSafe(d.timeIn);
+      const midEventcheck = formatTimeSafe(d.midEventcheck);
+      const timeOut = formatTimeSafe(d.timeOut);
+      const afternoontimeIn = formatTimeSafe(d.afternoontimeIn);
+      const afternoonmidEventcheck = formatTimeSafe(d.afternoonmidEventcheck);
+      const afternoontimeOut = formatTimeSafe(d.afternoontimeOut);
+      const startDate = parseDateSafe(d.start_date_time);
+      const endDate = parseDateSafe(d.end_date_time);
+      const now = new Date();
+      const eventEnded = endDate ? now > endDate : false;
 
-    // Event basic info
-    const firstEvent = attendanceDetails.value[0];
-    eventName.value = firstEvent.event_name ?? '';
-    eventDate.value = firstEvent.startDateTime ?? '';
+      let remarks = d.remarks || '';
+      let attendanceStats = d.attendanceStats || 'Unsettled';
 
-    // Event Status based on start and end date
-    const startDate = new Date(firstEvent.startDateTime);
-    const endDate = new Date(firstEvent.endDateTime);
-    const now = new Date();
+      const validAM = timeIn && midEventcheck && midEventcheck !== 'Missed' && timeOut;
+      const validPM = afternoontimeIn && afternoonmidEventcheck && afternoonmidEventcheck !== 'Missed' && afternoontimeOut;
+      const allComplete = validAM && validPM;
 
-    if (isNaN(startDate.getTime()) || isNaN(endDate.getTime())) {
-      eventStats.value = 'Unknown';
-    } else if (now < startDate) {
-      eventStats.value = 'Upcoming';
-    } else if (now >= startDate && now <= endDate) {
-      eventStats.value = 'Ongoing';
-    } else if (now > endDate) {
-      eventStats.value = 'Completed';
+      /* ===== Attendance Status Logic ===== */
+      if (d.absenceReqStatus === 'Approved') {
+        remarks = 'Excused';
+        attendanceStats = 'Excused';
+      } else if (Number(d.canSettle ?? 0) === 0) {
+        // ✅ Settled attendance automatically marked Complete
+        remarks = '';
+        attendanceStats = 'Complete';
+      } else if (allComplete) {
+        remarks = '';
+        attendanceStats = 'Complete';
+      } else if (eventEnded && !validAM && !validPM) {
+        remarks = 'Missed';
+        attendanceStats = 'Unsettled';
+      } else {
+        remarks = 'Incomplete';
+        attendanceStats = 'Unsettled';
+      }
+
+      return {
+        attendance_id: d.attendance_id,
+        studName: d.studName,
+        progYearSec: d.progYearSec,
+        timeIn,
+        midEventcheck,
+        timeOut,
+        afternoontimeIn,
+        afternoonmidEventcheck,
+        afternoontimeOut,
+        absenceReq: d.absenceReq ?? '',
+        remarks,
+        attendanceStats,
+        canSettle: Number(d.canSettle ?? 0),
+        start_date_time: d.start_date_time,
+        end_date_time: d.end_date_time,
+        event_name: d.event_name,
+        absenceReqStatus: d.absenceReqStatus,
+      };
+    });
+
+    /* ===== Summary Computation ===== */
+    if (attendanceDetails.value.length > 0) {
+      const first = attendanceDetails.value[0];
+      eventName.value = first.event_name ?? '';
+
+      const start = parseDateSafe(first.start_date_time);
+      const end = parseDateSafe(first.end_date_time);
+      const now = new Date();
+      const dateOptions = { month: 'short', day: 'numeric', year: 'numeric' };
+      const timeOptions = { hour: '2-digit', minute: '2-digit', hour12: true, timeZone: 'Asia/Manila' };
+
+      if (start && end) {
+        const startDate = start.toLocaleDateString('en-PH', dateOptions);
+        const startTime = start.toLocaleTimeString('en-PH', timeOptions);
+        const endDate = end.toLocaleDateString('en-PH', dateOptions);
+        const endTime = end.toLocaleTimeString('en-PH', timeOptions);
+        eventDate.value =
+          startDate === endDate
+            ? `${startDate} — ${startTime} to ${endTime}`
+            : `${startDate} ${startTime} — ${endDate} ${endTime}`;
+        eventStats.value = now < start ? 'Upcoming' : now <= end ? 'Ongoing' : 'Done';
+      }
+
+      totalAttendees.value = attendanceDetails.value.length;
+      totalAbsences.value = attendanceDetails.value.filter(r => r.remarks === 'Missed').length;
+      incompleteAttendance.value = attendanceDetails.value.filter(r => r.remarks === 'Incomplete').length;
+      completeAttendance.value = attendanceDetails.value.filter(r => r.attendanceStats === 'Complete').length;
+      approvedAbsences.value = attendanceDetails.value.filter(r => (r.attendanceStats || '').toLowerCase() === 'excused').length;
+      feedbacks.value = 0;
     }
 
-    // Summary counts
-    totalAttendees.value = attendanceDetails.value.length;
-    completeAttendance.value = attendanceDetails.value.filter(d => d.timeIn && d.midEventcheck && d.timeOut).length;
-    totalAbsences.value = attendanceDetails.value.filter(d => !d.timeIn && !d.midEventcheck && !d.timeOut).length;
-    incompleteAttendance.value = attendanceDetails.value.filter(d => {
-      const some = d.timeIn || d.midEventcheck || d.timeOut;
-      const all = d.timeIn && d.midEventcheck && d.timeOut;
-      return some && !all;
-    }).length;
+    /* ✅ Include both AM and PM sessions */
+    const missedAMIn = attendanceDetails.value.filter(d => !d.timeIn).length;
+    const missedPMIn = attendanceDetails.value.filter(d => !d.afternoontimeIn).length;
+    missedTimeIns.value = missedAMIn + missedPMIn;
 
-    approvedAbsences.value = attendanceDetails.value.filter(d => (d.attendanceStats || '').toLowerCase() === 'excused').length;
-    missedTimeIns.value = attendanceDetails.value.filter(d => !d.timeIn).length;
-    missedTimeOuts.value = attendanceDetails.value.filter(d => !d.timeOut).length;
-    missedMidChecks.value = attendanceDetails.value.filter(d => !d.midEventcheck).length;
-    attendanceRate.value = totalAttendees.value === 0 ? 0 : Math.round((completeAttendance.value / totalAttendees.value) * 100);
+    const missedAMOut = attendanceDetails.value.filter(d => !d.timeOut).length;
+    const missedPMOut = attendanceDetails.value.filter(d => !d.afternoontimeOut).length;
+    missedTimeOuts.value = missedAMOut + missedPMOut;
 
-    // Average time
+    const missedAMMid = attendanceDetails.value.filter(d => !d.midEventcheck).length;
+    const missedPMMid = attendanceDetails.value.filter(d => !d.afternoonmidEventcheck).length;
+    missedMidChecks.value = missedAMMid + missedPMMid;
+
+    attendanceRate.value =
+      totalAttendees.value === 0 ? 0 : Math.round((completeAttendance.value / totalAttendees.value) * 100);
+
     const timeInMins = attendanceDetails.value.map(d => parseTimeToMinutes(d.timeIn)).filter(v => v != null) as number[];
     const timeOutMins = attendanceDetails.value.map(d => parseTimeToMinutes(d.timeOut)).filter(v => v != null) as number[];
+    avgTimeIn.value = timeInMins.length
+      ? formatMinutesToTime(Math.round(timeInMins.reduce((a, b) => a + b, 0) / timeInMins.length))
+      : '';
+    avgTimeOut.value = timeOutMins.length
+      ? formatMinutesToTime(Math.round(timeOutMins.reduce((a, b) => a + b, 0) / timeOutMins.length))
+      : '';
 
-    avgTimeIn.value = timeInMins.length ? formatMinutesToTime(Math.round(timeInMins.reduce((a,b)=>a+b,0)/timeInMins.length)) : '';
-    avgTimeOut.value = timeOutMins.length ? formatMinutesToTime(Math.round(timeOutMins.reduce((a,b)=>a+b,0)/timeOutMins.length)) : '';
+    /* ===== Program Attendance Rate ===== */
+    const rateMap: Record<string, number> = { BSIT: 0, BSED: 0, BEED: 0, BSHM: 0 };
+    const programTotals: Record<string, { total: number; complete: number }> = {
+      BSIT: { total: 0, complete: 0 },
+      BSED: { total: 0, complete: 0 },
+      BEED: { total: 0, complete: 0 },
+      BSHM: { total: 0, complete: 0 },
+    };
 
-    // Program rates
-    const rateMap: Record<string, number> = { BSIT:0, BSED:0, BEED:0, BSHM:0 };
     attendanceDetails.value.forEach(d => {
       const code = programCodeFromProgYearSec(d.progYearSec);
-      if (code && rateMap.hasOwnProperty(code)) {
-        rateMap[code] = parseFloat(d.programAttendanceRate) || 0;
+      if (code && programTotals[code]) {
+        programTotals[code].total++;
+        if (d.attendanceStats === 'Complete') programTotals[code].complete++;
       }
     });
-    programRates.value = rateMap;
 
-  } catch(err) {
+    Object.keys(programTotals).forEach(code => {
+      const { total, complete } = programTotals[code];
+      rateMap[code] = total > 0 ? Math.round((complete / total) * 100) : 0;
+    });
+
+    programRates.value = rateMap;
+  } catch (err) {
     console.error(err);
   }
 });
 
-/* Logout */
+/* =========================
+   ✅ Admin Session Check
+========================= */
+const admin = ref<any>(null);
+
+onMounted(async () => {
+  try {
+    const res = await axios.get('http://localhost:5000/api/check-admin-session', { withCredentials: true });
+    if (res.data.loggedIn && res.data.admin) {
+      admin.value = res.data.admin;
+    } else {
+      router.replace('/adminLogIn');
+    }
+  } catch (err) {
+    console.error('Session check failed:', err);
+    router.replace('/adminLogIn');
+  }
+});
+
+/* =========================
+   ✅ Logout Function
+========================= */
 const confirmLogout = async () => {
   const result = await Swal.fire({
     title: 'Are you sure?',
@@ -338,7 +477,7 @@ const confirmLogout = async () => {
   if (result.isConfirmed) {
     try {
       await axios.post('http://localhost:5000/api/users/admin-logout', {}, { withCredentials: true });
-      router.push('/adminLogIn'); // redirect to login page
+      router.push('/adminLogIn');
     } catch (err) {
       console.error(err);
       Swal.fire({
@@ -348,7 +487,7 @@ const confirmLogout = async () => {
         didOpen: () => {
           document.body.classList.remove('swal2-height-auto');
           document.documentElement.classList.remove('swal2-height-auto');
-        }
+        },
       });
     }
   }
@@ -365,6 +504,7 @@ const confirmLogout = async () => {
   background-size: cover;
   background-repeat: no-repeat;
   background-position: center;
+  padding-bottom: 200px;
 }
 
 .content-wrapper {
@@ -448,6 +588,7 @@ const confirmLogout = async () => {
 .main-content {
   flex: 1;
   padding: 20px;
+  padding-bottom: 200px !important;
 }
 
 .admin-logo {

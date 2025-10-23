@@ -50,21 +50,15 @@
                             <li><router-link to="/attendance-records" class="sub">View Attendance Records</router-link></li>
                         </ul>
                     </li>
-                    <li>
-                        <router-link to="/Request" class="sidebar-link">Request Management</router-link>
-                    </li>
-                    <li>
-                        <router-link to="/Notif" class="sidebar-link">Notification Management</router-link>
-                    </li>
-                    <li>
-                        <router-link to="/Feed" class="sidebar-link">Feedback Management</router-link>
-                    </li>
-                    <li>
-                        <router-link to="/Update" class="sidebar-link">Featured Updates</router-link>
-                    </li>
-                    <li>
-                      <router-link to="/account-center" class="sidebar-link">Account Center</router-link>
-                    </li>
+                     <template v-if="admin && admin.status !== 0">
+                        <li><router-link to="/Request" class="sidebar-link">Request Management</router-link></li>
+                        <li><router-link to="/Notif" class="sidebar-link">Notification Management</router-link></li>
+                        <li><router-link to="/Feed" class="sidebar-link">Feedback Management</router-link></li>
+                        <li><router-link to="/Update" class="sidebar-link">Featured Updates</router-link></li>
+                      </template>
+                      <template v-if="admin && admin.status !== 2">
+                        <li><router-link to="/Account-center" class="sidebar-link">Account Center</router-link></li>
+                      </template>
                     <li>
                       <a href="javascript:void(0);" class="sidebar-link" @click="confirmLogout">
                           Log Out
@@ -76,11 +70,11 @@
             <div class="dashboard-cards">
                 <div class="dashcard">
                     <div class="dashcard-title">Total Students</div>
-                    <div class="dashcard-number">2567</div>
+                    <div class="dashcard-number">{{ totalStudents }}</div>
                 </div>
                 <div class="dashcard">
                     <div class="dashcard-title">Total Courses</div>
-                    <div class="dashcard-number">4</div>
+                    <div class="dashcard-number">{{ totalCourses }}</div>
                 </div>
                 <div class="dashcard date-time">
                     <div class="dashcard-title">Date & Time</div>
@@ -119,6 +113,33 @@ import Swal from 'sweetalert2';
 
 const router = useRouter();
 const API_URL = 'http://localhost:5000/api/users/admin-login';
+const totalStudents = ref(0);
+const totalCourses = ref(0);
+
+// --- Sidebar Menus ---
+const showStudentMenu = ref(false);
+const showAcadMenu = ref(false);
+const showEventMenu = ref(false);
+const toggleStudentMenu = () => (showStudentMenu.value = !showStudentMenu.value);
+const toggleAcadMenu = () => (showAcadMenu.value = !showAcadMenu.value);
+const toggleEventMenu = () => (showEventMenu.value = !showEventMenu.value);
+
+const fetchTotalCourses = async () => {
+  try {
+    const res = await axios.get('http://localhost:5000/api/courses/count');
+    totalCourses.value = res.data.total;
+  } catch (err) {
+    console.error('Error fetching total courses:', err);
+  }
+};
+const fetchTotalStudents = async () => {
+  try {
+    const res = await axios.get('http://localhost:5000/api/students/count');
+    totalStudents.value = res.data.total;
+  } catch (err) {
+    console.error('Error fetching total students:', err);
+  }
+};
 
 const confirmLogout = async () => {
   const result = await Swal.fire({
@@ -168,23 +189,24 @@ const updateDateTime = () => {
 updateDateTime();
 
 setInterval(updateDateTime, 1000);
+const admin = ref<any>(null);
 
 onMounted(async () => {
   try {
     const res = await axios.get('http://localhost:5000/api/check-admin-session', {
       withCredentials: true
     });
-
-    if (res.data.loggedIn) {
-      router.replace('/dashboard');
+    if (res.data.loggedIn && res.data.admin) {
+      admin.value = res.data.admin;
     } else {
       router.replace('/adminLogIn'); // redirect if not logged in
     }
-
   } catch (err) {
     console.error('Session check failed:', err);
     router.replace('/adminLogIn');
   }
+  await fetchTotalStudents();
+  await fetchTotalCourses();
 });
 
 const logIn = async () => {
@@ -310,7 +332,7 @@ const logIn = async () => {
     display: inline-block;
     margin-left: 5px;
     overflow: hidden;
-    width: 280px;
+    width: 32.9%;
     color: white;
     text-align: center;
     box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);

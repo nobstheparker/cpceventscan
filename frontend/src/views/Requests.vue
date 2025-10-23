@@ -46,11 +46,15 @@
                 <li><router-link to="/attendance-records" class="sub">View Attendance Records</router-link></li>
               </ul>
             </li>
-            <li><router-link to="/Request" class="sidebar-link">Request Management</router-link></li>
-            <li><router-link to="/Notif" class="sidebar-link">Notification Management</router-link></li>
-            <li><router-link to="/Feed" class="sidebar-link">Feedback Management</router-link></li>
-            <li><router-link to="/Update" class="sidebar-link">Featured Updates</router-link></li>
-            <li><router-link to="/account-center" class="sidebar-link">Account Center</router-link></li>
+             <template v-if="admin && admin.status !== 0">
+              <li><router-link to="/Request" class="sidebar-link">Request Management</router-link></li>
+              <li><router-link to="/Notif" class="sidebar-link">Notification Management</router-link></li>
+              <li><router-link to="/Feed" class="sidebar-link">Feedback Management</router-link></li>
+              <li><router-link to="/Update" class="sidebar-link">Featured Updates</router-link></li>
+            </template>
+            <template v-if="admin && admin.status !== 2">
+              <li><router-link to="/Account-center" class="sidebar-link">Account Center</router-link></li>
+            </template>
              <li>
                 <a href="javascript:void(0);" class="sidebar-link" @click="confirmLogout">
                     Log Out
@@ -58,12 +62,10 @@
             </li>
           </ul>
         </div>
-
         <!-- Main Content -->
         <div class="main-content">
           <!-- Request Overview -->
           <div class="request-overviews">
-            <h3>Students Request And Application Overview</h3>
             <table class="requestTable">
               <thead>
                 <tr>
@@ -118,7 +120,7 @@
                   <td>{{ formatDate(req.reqDate) }}</td>
                   <td>{{ req.reqstats }}</td>
                   <td>
-                    <ion-button size="small" style="--background:#e2cb0c;--color:black; font-weight: 600; margin: 0 auto !important; display: flex;" @click="openAbsenceModal(req)">View Details</ion-button>
+                    <ion-button size="small" style="--background:#e2cb0c;--color:black; font-weight: 600; margin: 0 auto !important; display: flex; width: 120px;" @click="openAbsenceModal(req)">View Details</ion-button>
                   </td>
                 </tr>
               </tbody>
@@ -165,7 +167,7 @@
                   <td>{{ formatDate(req.reqDate) }}</td>
                   <td>{{ req.reqstats }}</td>
                   <td>
-                    <ion-button size="small" style="--background:#e2cb0c;--color:black; font-weight: 600; margin: 0 auto !important; display: flex;" @click="openVolunteerModal(req)">View Details</ion-button>
+                    <ion-button size="small" style="--background:#e2cb0c;--color:black; font-weight: 600; margin: 0 auto !important; display: flex; width: 120px;" @click="openVolunteerModal(req)">View Details</ion-button>
                   </td>
                 </tr>
               </tbody>
@@ -400,6 +402,25 @@ onMounted(async () => {
     updateCounts();
   } catch (e) {
     console.error(e);
+  }
+});
+
+const admin = ref<any>(null);
+
+onMounted(async () => {
+  try {
+    const res = await axios.get('http://localhost:5000/api/check-admin-session', {
+      withCredentials: true
+    });
+
+    if (res.data.loggedIn && res.data.admin) {
+      admin.value = res.data.admin;
+    } else {
+      router.replace('/adminLogIn'); // redirect if not logged in
+    }
+  } catch (err) {
+    console.error('Session check failed:', err);
+    router.replace('/adminLogIn');
   }
 });
 
@@ -763,8 +784,9 @@ h2{
 
 .requestTable th {
   background-color: #07055D;
-  color: white;
+  color: #ffe700;
   font-weight: bold;
+  font-weight: 800;
 }
 .requestTable tbody{
     color: #19191a;
@@ -772,6 +794,8 @@ h2{
 }
 .requestTable td{
     border: 1px solid #07055d !important;
+    font-size: 22px;
+    font-weight: 800;
 }
 .pagination-container {
   margin-top: 12px;
@@ -813,7 +837,7 @@ thead {
 
 thead th {
   padding: 10px;
-  text-align: left;
+  text-align: center;
   white-space: nowrap;
 }
 tbody{

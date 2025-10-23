@@ -1,22 +1,20 @@
 <template>
   <ion-page>
+    <!-- HEADER -->
     <ion-header>
       <ion-toolbar>
         <div style="display: flex; justify-content: space-between; align-items: center; width: 100%;">
           <div class="admin-logo">
             <img src="../../public/img/cpclogo.jpg" alt="CPC Logo" />
           </div>
-          <div class="toolbar-icons">
-            <ion-button fill="clear" size="small">
-              <ion-icon :icon="notifications" slot="icon-only"></ion-icon>
-            </ion-button>
-          </div>
         </div>
       </ion-toolbar>
     </ion-header>
 
+    <!-- CONTENT -->
     <ion-content class="ad-background">
       <div class="content-wrapper">
+        <!-- SIDEBAR -->
         <div class="sidebar">
           <router-link to="/dashboard" class="sidebar-title">Dashboard</router-link>
           <ul>
@@ -55,134 +53,98 @@
                 <li><router-link to="/attendance-records" class="sub">View Attendance Records</router-link></li>
               </ul>
             </li>
-            <li>
-              <router-link to="/Request" class="sidebar-link">Request Management</router-link>
-            </li>
-            <li>
-              <router-link to="/Notif" class="sidebar-link">Notification Management</router-link>
-            </li>
-            <li>
-              <router-link to="/Feed" class="sidebar-link">Feedback Management</router-link>
-            </li>
-            <li>
-              <router-link to="/Update" class="sidebar-link">Featured Updates</router-link>
-            </li>
-            <li><router-link to="/account-center" class="sidebar-link">Account Center</router-link></li>
-             <li>
-                <a href="javascript:void(0);" class="sidebar-link" @click="confirmLogout">
-                    Log Out
-                </a>
-            </li>
+             <template v-if="admin && admin.status !== 0">
+              <li><router-link to="/Request" class="sidebar-link">Request Management</router-link></li>
+              <li><router-link to="/Notif" class="sidebar-link">Notification Management</router-link></li>
+              <li><router-link to="/Feed" class="sidebar-link">Feedback Management</router-link></li>
+              <li><router-link to="/Update" class="sidebar-link">Featured Updates</router-link></li>
+            </template>
+            <template v-if="admin && admin.status !== 2">
+              <li><router-link to="/Account-center" class="sidebar-link">Account Center</router-link></li>
+            </template>
+            <li><a href="javascript:void(0);" class="sidebar-link" @click="confirmLogout">Log Out</a></li>
           </ul>
         </div>
 
+        <!-- MAIN CONTENT -->
         <div class="main-content">
-    
-        <h4>EVENT FEEDBACK SUMMARY</h4>
-        <div style="display: flex; justify-content: flex-end; gap: 15px; margin-top: 20px;"></div>
-          <div style="--background: transparent;">
 
-            <div style="overflow-x: auto;">
-              <table style="width: 100%; border-collapse: collapse; font-size: 14px;">
-                <thead>
-                  <tr>
-                    <th style="cursor:pointer;text-align: center" @click="sortData('eventName')">
-                      Event Name
-                      <span v-if="sortColumn === 'eventName'">{{ sortOrder === 'asc' ? '▲' : '▼' }}</span>
-                    </th>
-                    <th style="cursor:pointer;text-align: center" @click="sortData('dateTime')">
-                      Date & Time
-                      <span v-if="sortColumn === 'dateTime'">{{ sortOrder === 'asc' ? '▲' : '▼' }}</span>
-                    </th>
-                    <th style="cursor:pointer;text-align: center" @click="sortData('totalFeedbacks')">
-                      Total Feedback Submissions
-                      <span v-if="sortColumn === 'totalFeedbacks'">{{ sortOrder === 'asc' ? '▲' : '▼' }}</span>
-                    </th>
-                    <th style="cursor:pointer;text-align: center" @click="sortData('eventStats')">
-                      Event Status
-                      <span v-if="sortColumn === 'eventStats'">{{ sortOrder === 'asc' ? '▲' : '▼' }}</span>
-                    </th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <tr v-for="feedback in paginatedFeedbacks" :key="feedback.eventID">
-                    <td>{{ feedback.eventName }}</td>
-                    <td>{{ feedback.dateTime }}</td>
-                    <td>{{ feedback.totalFeedbacks }}</td>
-                    <td>{{ feedback.eventStats }}</td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
-        </div>
+          <!-- EVENT SUMMARY TABLE -->
+          <div style="overflow-x: auto; margin-bottom: 30px;border-radius: 10px; margin-top: 10px;">
+            <table style="width: 100%; border-collapse: collapse; font-size: 14px;">
+              <thead style="color: #ffff00; font-weight: 800; text-transform: uppercase; font-size: 20px;">
+                <tr>
+                  <th style="cursor:pointer;text-align:center" @click="sortData('eventName')">
+                    Event Name
+                    <span v-if="sortColumn === 'eventName'">{{ sortOrder === 'asc' ? '▲' : '▼' }}</span>
+                  </th>
+                  <th style="cursor:pointer;text-align:center" @click="sortData('dateTime')">
+                    Date & Time
+                    <span v-if="sortColumn === 'dateTime'">{{ sortOrder === 'asc' ? '▲' : '▼' }}</span>
+                  </th>
+                  <th style="cursor:pointer;text-align:center" @click="sortData('totalFeedbacks')">
+                    Total Feedback Submissions
+                    <span v-if="sortColumn === 'totalFeedbacks'">{{ sortOrder === 'asc' ? '▲' : '▼' }}</span>
+                  </th>
+                  <th style="cursor:pointer;text-align:center" @click="sortData('eventStatus')">
+                    Event Status
+                    <span v-if="sortColumn === 'eventStatus'">{{ sortOrder === 'asc' ? '▲' : '▼' }}</span>
+                  </th>
+                </tr>
+              </thead>
+              <tbody style="font-weight: 700 !important; font-size: 20px !important; text-align: center;">
+                <tr v-for="event in paginatedEvents" :key="event.eventID">
+                  <td>{{ event.eventName }}</td>
+                  <td>{{ event.dateTime }}</td>
+                  <td>{{ event.totalFeedbacks }}</td>
+                  <td>{{ event.eventStatus }}</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
 
-        <h2>FEEDBACK LIST</h2>
-         <div style="--background: transparent;">
+          <!-- INDIVIDUAL FEEDBACK TABLE -->
+          <h4>STUDENT FEEDBACK LIST</h4>
+          <div style="overflow-x: auto; border-radius: 15px; margin-top: 10px;">
+            <table style="width: 100%; border-collapse: collapse; font-size: 14px;">
+              <thead>
+                <tr>
+                  <th style="cursor:pointer;text-align:center" @click="sortData('studName')">
+                    Student Name
+                    <span v-if="sortColumn === 'studName'">{{ sortOrder === 'asc' ? '▲' : '▼' }}</span>
+                  </th>
+                  <th style="cursor:pointer;text-align:center" @click="sortData('progYrSec')">
+                    Program, Yr & Section
+                    <span v-if="sortColumn === 'progYrSec'">{{ sortOrder === 'asc' ? '▲' : '▼' }}</span>
+                  </th>
+                  <th style="cursor:pointer;text-align:center" @click="sortData('feedbacks')">
+                    Feedback
+                    <span v-if="sortColumn === 'feedbacks'">{{ sortOrder === 'asc' ? '▲' : '▼' }}</span>
+                  </th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr v-for="fb in paginatedFeedbacks" :key="fb.feedback_id">
+                  <td>{{ fb.studName }}</td>
+                  <td>{{ fb.progYrSec }}</td>
+                  <td>{{ fb.feedbacks }}</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
 
-            <div style="overflow-x: auto;">
-              <table style="width: 100%; border-collapse: collapse; font-size: 14px;">
-                <thead>
-                  <tr>
-                    <th style="cursor:pointer;text-align: center" @click="sortData('studName')">
-                      Student Name
-                      <span v-if="sortColumn === 'studName'">{{ sortOrder === 'asc' ? '▲' : '▼' }}</span>
-                    </th>
-                    <th style="cursor:pointer;text-align: center" @click="sortData('progYrSec')">
-                      Program, Yr & Section
-                      <span v-if="sortColumn === 'progYrSec'">{{ sortOrder === 'asc' ? '▲' : '▼' }}</span>
-                    </th>
-                    <th style="cursor:pointer; text-align: center;" @click="sortData('feedback')">
-                      Feedback
-                      <span v-if="sortColumn === 'feedback'">{{ sortOrder === 'asc' ? '▲' : '▼' }}</span>
-                    </th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <tr v-for="feedback in paginatedFeedbacks" :key="feedback.eventID">
-                    <td>{{ feedback.studName }}</td>
-                    <td>{{ feedback.progYrSec }}</td>
-                    <td>{{ feedback.feedbacks }}</td>
-                                  
-                  </tr>
-                </tbody>
-              </table>
-            </div>
-            
-            <div class="pagination-container">
-              <button 
-                :disabled="currentPage === 1" 
-                @click="currentPage--"
-                class="pagination-button"
-                aria-label="Previous page"
-              >
-                &laquo; Prev
-              </button>
-
-              <button 
-                v-for="page in totalPages"
-                :key="page"
-                :class="['pagination-button', { active: currentPage === page }]"
-                @click="currentPage = page"
-                :aria-current="currentPage === page ? 'page' : false"
-              >
-                {{ page }}
-              </button>
-
-              <button 
-                :disabled="currentPage === totalPages" 
-                @click="currentPage++"
-                class="pagination-button"
-                aria-label="Next page"
-              >
-                Next &raquo;
-              </button>
-            </div>
-        </div>
+          <!-- Pagination -->
+          <div class="pagination-container" style="margin-top:12px">
+            <button :disabled="currentPage === 1" @click="currentPage--" class="pagination-button">&laquo; Prev</button>
+            <button v-for="page in totalPages" :key="page" :class="['pagination-button', { active: currentPage === page }]" @click="currentPage = page">{{ page }}</button>
+            <button :disabled="currentPage === totalPages" @click="currentPage++" class="pagination-button">Next &raquo;</button>
+          </div>
 
         </div>
       </div>
     </ion-content>
 
+    <!-- FOOTER -->
     <div class="footer">
       <ion-text>
         <small>&copy; All Rights Reserved PPG 2025.</small>
@@ -197,27 +159,27 @@ import { useRoute, useRouter } from 'vue-router';
 import Swal from 'sweetalert2';
 import axios from 'axios';
 
-const router = useRouter();
 const route = useRoute();
-const eventID = route.params.eventID; // e.g., 48
+const router = useRouter();
+const eventID = route.params.eventID;
 
-// Sidebar toggle states
 const showStudentMenu = ref(false);
 const showAcadMenu = ref(false);
 const showEventMenu = ref(false);
-const toggleStudentMenu = () => showStudentMenu.value = !showStudentMenu.value;
-const toggleAcadMenu = () => showAcadMenu.value = !showAcadMenu.value;
-const toggleEventMenu = () => showEventMenu.value = !showEventMenu.value;
+const toggleStudentMenu = () => (showStudentMenu.value = !showStudentMenu.value);
+const toggleAcadMenu = () => (showAcadMenu.value = !showAcadMenu.value);
+const toggleEventMenu = () => (showEventMenu.value = !showEventMenu.value);
 
-// Table state
+const events = ref<any[]>([]);
 const feedbacks = ref<any[]>([]);
+const eventTitle = ref('');
+
 const sortColumn = ref('');
 const sortOrder = ref<'asc' | 'desc'>('asc');
-const searchQuery = ref('');
 const currentPage = ref(1);
 const itemsPerPage = 10;
+const totalPages = computed(() => Math.ceil(feedbacks.value.length / itemsPerPage));
 
-// Logout confirmation
 const confirmLogout = async () => {
   const result = await Swal.fire({
     title: 'Are you sure?',
@@ -225,127 +187,86 @@ const confirmLogout = async () => {
     icon: 'warning',
     showCancelButton: true,
     confirmButtonText: 'Yes, log me out!',
-    didOpen: () => {
-      document.body.classList.remove('swal2-height-auto');
-      document.documentElement.classList.remove('swal2-height-auto');
-    },
   });
-
   if (result.isConfirmed) {
     try {
       await axios.post('http://localhost:5000/api/users/admin-logout', {}, { withCredentials: true });
-      router.push('/adminLogIn'); // redirect to login page
+      router.push('/adminLogIn');
     } catch (err) {
-      console.error(err);
-      Swal.fire({
-        icon: 'error',
-        title: 'Error',
-        text: 'Logout failed',
-        didOpen: () => {
-          document.body.classList.remove('swal2-height-auto');
-          document.documentElement.classList.remove('swal2-height-auto');
-        }
-      });
+      Swal.fire('Error', 'Logout failed', 'error');
     }
   }
 };
 
-// Sorting function
-function sortData(column: string) {
-  if (sortColumn.value === column) {
-    sortOrder.value = sortOrder.value === 'asc' ? 'desc' : 'asc';
-  } else {
-    sortColumn.value = column;
-    sortOrder.value = 'asc';
-  }
-  currentPage.value = 1;
-}
-
-// Fetch feedback for a specific event
-const fetchFeedbacks = async () => {
+const fetchEventData = async () => {
   try {
-    const response = await axios.get(`http://localhost:5000/api/feedback/${eventID}`);
-    const data = response.data;
+    const res = await axios.get(`http://localhost:5000/api/feedback/${eventID}`);
+    const list = res.data.feedback || [];
+    if (list.length > 0) {
+      const f = list[0];
+      eventTitle.value = f.event_name;
 
-    console
-
-    // if (!data.feedbackList || data.feedbackList.length === 0) {
-    //   feedbacks.value = [];
-    //   return;
-    // }
-
-    feedbacks.value = data.feedback.map((f: any) => {
-      const now = new Date();
-      const start = new Date(f.start_date_time);
-      const end = new Date(f.end_date_time);
-
-      let eventStatus = '';
-      if (now < start) {
-        eventStatus = 'Upcoming';
-      } else if (now >= start && now <= end) {
-        eventStatus = 'Ongoing';
-      } else {
-        eventStatus = 'Completed';
-      }
-
-      return {
+      events.value = [{
         eventID: f.event_id,
         eventName: f.event_name,
         dateTime: new Date(f.created_at).toLocaleString(),
         totalFeedbacks: f.total_feedback_for_event,
-        eventStats: eventStatus,
+        eventStatus: (() => {
+          const now = new Date();
+          const start = new Date(f.start_date_time);
+          const end = new Date(f.end_date_time);
+          if (now < start) return 'Upcoming';
+          else if (now <= end) return 'Ongoing';
+          return 'Completed';
+        })()
+      }];
+
+      feedbacks.value = list.map((f: any) => ({
+        feedback_id: f.feedback_id,
         studName: `${f.first_name} ${f.last_name}`,
         progYrSec: `${f.course_code} ${f.year_name} ${f.section_name}`,
         feedbacks: f.notes
-      };
-    });
-  } catch (error) {
-    console.error('Failed to fetch feedback:', error);
+      }));
+    }
+  } catch (err) {
+    console.error('Failed to fetch feedback:', err);
   }
 };
 
-// Computed: filtering
-const filteredFeedbacks = computed(() => {
-  let data = [...feedbacks.value];
-  const query = searchQuery.value.toLowerCase();
+const sortData = (column: string) => {
+  if (sortColumn.value === column) sortOrder.value = sortOrder.value === 'asc' ? 'desc' : 'asc';
+  else sortColumn.value = column;
+  currentPage.value = 1;
+};
 
-  if (query) {
-    data = data.filter(item =>
-      Object.values(item).some(val => String(val).toLowerCase().includes(query))
-    );
-  }
-
-  if (sortColumn.value) {
-    data.sort((a, b) => {
-      const key = sortColumn.value as keyof typeof a;
-      const aVal = String(a[key]).toLowerCase();
-      const bVal = String(b[key]).toLowerCase();
-      if (aVal < bVal) return sortOrder.value === 'asc' ? -1 : 1;
-      if (aVal > bVal) return sortOrder.value === 'asc' ? 1 : -1;
-      return 0;
-    });
-  }
-
-  return data;
+const paginatedEvents = computed(() => {
+  const start = (currentPage.value - 1) * itemsPerPage;
+  return events.value.slice(start, start + itemsPerPage);
 });
-
-// Paginated feedbacks
 const paginatedFeedbacks = computed(() => {
   const start = (currentPage.value - 1) * itemsPerPage;
-  return filteredFeedbacks.value.slice(start, start + itemsPerPage);
+  return feedbacks.value.slice(start, start + itemsPerPage);
 });
 
-const totalPages = computed(() => Math.ceil(filteredFeedbacks.value.length / itemsPerPage));
+const admin = ref<any>(null);
 
-// Fetch data on mount
-onMounted(() => {
-  fetchFeedbacks();
+onMounted(async () => {
+  try {
+    const res = await axios.get('http://localhost:5000/api/check-admin-session', {
+      withCredentials: true
+    });
+
+    if (res.data.loggedIn && res.data.admin) {
+      admin.value = res.data.admin;
+    } else {
+      router.replace('/adminLogIn'); // redirect if not logged in
+    }
+  } catch (err) {
+    console.error('Session check failed:', err);
+    router.replace('/adminLogIn');
+  }
+  fetchEventData();
 });
-
-// Navigate to feedback details
-const goToFeedbackDetails = (id: number) => {
-  router.push(`/feedback-details/${id}`);
-};
 </script>
 
 <style scoped>
@@ -432,6 +353,10 @@ const goToFeedbackDetails = (id: number) => {
   margin: 8px 0;
 }
 
+.pagination-container *{
+  color: #fff;
+}
+
 .sidebar ul li a {
   color: white;
   text-decoration: none;
@@ -465,6 +390,9 @@ ion-icon {
   margin-top: auto;
   text-align: center;
   color: white;
+  position: fixed;
+  width: 100%;
+  bottom: 0;
 }
 
 h4{

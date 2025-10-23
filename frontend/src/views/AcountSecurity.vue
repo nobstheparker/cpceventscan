@@ -10,7 +10,10 @@
       </ion-toolbar>
     </ion-header>
 
-    <ion-content>
+    <ion-content  class="fixed-content"
+      :scrollAssist="false"
+      :keyboard-attach="false"
+      keyboard-resize="none">
       <div id="container">
         <div class="form-container">
           <!-- Yellow Title Bar -->
@@ -40,7 +43,7 @@
               </div>
               <div class="input-row">
                 <ion-label>Linked Email:</ion-label>
-                <ion-input type="email" :value="email" readonly></ion-input>
+                <ion-input :value="email" readonly></ion-input>
               </div>
             </ion-card-content>
           </ion-card>
@@ -71,7 +74,7 @@
       <ion-modal :is-open="showPasswordModal" @didDismiss="showPasswordModal = false">
         <ion-header>
           <ion-toolbar>
-            <ion-title>Change Password</ion-title>
+            <ion-title style="font-weight: 700;margin-left: 10px;">Change Password</ion-title>
             <ion-buttons slot="end">
               <ion-button @click="showPasswordModal = false">Close</ion-button>
             </ion-buttons>
@@ -80,19 +83,19 @@
         <ion-content class="modal-content">
             <ion-list>
               <ion-item>
-                <ion-label position="stacked">Current Password</ion-label>
+                <ion-label position="stacked" style="font-size: 18px !important; margin-bottom: 6px;">Current Password</ion-label>
                 <ion-input type="password" v-model="currentPassword" required></ion-input>
               </ion-item>
               <ion-item>
-                <ion-label position="stacked">New Password</ion-label>
+                <ion-label position="stacked" style="font-size: 18px !important; margin-bottom: 6px;">New Password</ion-label>
                 <ion-input type="password" v-model="newPassword" required></ion-input>
               </ion-item>
               <ion-item>
-                <ion-label position="stacked">Confirm Password</ion-label>
+                <ion-label position="stacked" style="font-size: 18px !important; margin-bottom: 6px;">Confirm Password</ion-label>
                 <ion-input type="password" v-model="confirmPassword" required></ion-input>
               </ion-item>
             </ion-list>
-            <ion-button expand="block" @click="submitPasswordChange" style="margin: 20px;">
+            <ion-button expand="block" @click="submitPasswordChange" style="margin: 15px; --background: #08055e !important; color: #ffff00;font-weight: 600;">
               Change Password
           </ion-button>
         </ion-content>
@@ -531,12 +534,13 @@ ion-icon {
 }
 ion-modal, .modal-content { 
     padding: 20px; 
-    max-height: 60vh; 
+    max-height: 53vh; 
     overflow-y: auto; 
     padding-top: 50px; 
 } 
 ion-modal ion-input { 
-    background-color: transparent; 
+    background-color: #cdcaca; 
     margin-left: 0 !important; 
 }
+
 </style>

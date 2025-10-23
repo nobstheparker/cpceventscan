@@ -52,11 +52,15 @@
               </ul>
             </li>
 
-            <li><router-link to="/Request" class="sidebar-link">Request Management</router-link></li>
-            <li><router-link to="/Notif" class="sidebar-link">Notification Management</router-link></li>
-            <li><router-link to="/Feed" class="sidebar-link">Feedback Management</router-link></li>
-            <li><router-link to="/Update" class="sidebar-link">Featured Updates</router-link></li>
-            <li><router-link to="/account-center" class="sidebar-link">Account Center</router-link></li>
+             <template v-if="admin && admin.status !== 0">
+              <li><router-link to="/Request" class="sidebar-link">Request Management</router-link></li>
+              <li><router-link to="/Notif" class="sidebar-link">Notification Management</router-link></li>
+              <li><router-link to="/Feed" class="sidebar-link">Feedback Management</router-link></li>
+              <li><router-link to="/Update" class="sidebar-link">Featured Updates</router-link></li>
+            </template>
+            <template v-if="admin && admin.status !== 2">
+              <li><router-link to="/Account-center" class="sidebar-link">Account Center</router-link></li>
+            </template>
             <li>
               <router-link to="/adminLogIn" class="sidebar-link" @click="confirmLogout">
                 Log Out
@@ -67,7 +71,6 @@
 
         <!-- ===== MAIN TABLE AREA ===== -->
         <div class="main-content">
-          <ion-title class="studrecord">ACCOUNT RECOVERY</ion-title>
 
           <!-- ✅ Removed inner ion-content -->
           <div class="ion-padding" style="background:transparent; padding: 0;">
@@ -249,7 +252,25 @@ const fetchStudents = async () => {
     console.error('Error fetching 2FA records:', err);
   }
 };
-onMounted(fetchStudents);
+const admin = ref<any>(null);
+
+onMounted(async () => {
+  try {
+    const res = await axios.get('http://localhost:5000/api/check-admin-session', {
+      withCredentials: true
+    });
+
+    if (res.data.loggedIn && res.data.admin) {
+      admin.value = res.data.admin;
+    } else {
+      router.replace('/adminLogIn'); // redirect if not logged in
+    }
+  } catch (err) {
+    console.error('Session check failed:', err);
+    router.replace('/adminLogIn');
+  }
+  fetchStudents()
+});
 
 /* ====== TOGGLE 2FA STATUS ====== */
 const toggle2FA = async (student) => {
@@ -338,7 +359,7 @@ thead {
 
 thead th {
   padding: 10px;
-  text-align: left;
+  text-align: center;
   white-space: nowrap;
 }
 tbody{

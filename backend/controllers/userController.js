@@ -7,7 +7,7 @@ const tableName = 'user';
 // --- GET all users ---
 const getUsers = async (req, res) => {
   try {
-    const [rows] = await pool.query(`SELECT * FROM ${tableName} where status = 0 or status = 1`);
+    const [rows] = await pool.query(`SELECT * FROM ${tableName} where status = 1 or status = 2`);
     res.json(rows);
   } catch (err) {
     res.status(500).json({ error: err.message });

@@ -46,16 +46,20 @@
                 <li><router-link to="/Event/attendance-records" class="sub">View Attendance Records</router-link></li>
               </ul>
             </li>
-            <li><router-link to="/Request" class="sidebar-link">Request Management</router-link></li>
-            <li><router-link to="/Notif" class="sidebar-link">Notification Management</router-link></li>
-            <li><router-link to="/Feed" class="sidebar-link">Feedback Management</router-link></li>
-            <li><router-link to="/Update" class="sidebar-link">Featured Updates</router-link></li>
+            <template v-if="loggedInAdmin && loggedInAdmin.role !== 0">
+              <li><router-link to="/Request" class="sidebar-link">Request Management</router-link></li>
+              <li><router-link to="/Notif" class="sidebar-link">Notification Management</router-link></li>
+              <li><router-link to="/Feed" class="sidebar-link">Feedback Management</router-link></li>
+              <li><router-link to="/Update" class="sidebar-link">Featured Updates</router-link></li>
+            </template>
+            <template v-if="loggedInAdmin && loggedInAdmin.status !== 2">
+              <li><router-link to="/Account-center" class="sidebar-link">Account Center</router-link></li>
+            </template>
             <li>
               <a href="javascript:void(0);" class="sidebar-link" @click="confirmLogout">
                 Log Out
               </a>
             </li>
-
           </ul>
         </div>
 
@@ -63,9 +67,9 @@
         <div class="main-content">
           <h3 style="margin-bottom: 20px; color:#fff;">Account Center Overview</h3>
 
-          <!-- Profile Info Card -->
+          <!-- Profile Info -->
           <ion-card style="margin-bottom: 20px;">
-            <div style="background: #07055d; padding: 12px; text-align: center; border-bottom: none;">
+            <div style="background: #07055d; padding: 12px; text-align: center;">
               <h4 style="margin: 0 auto; font-size: 18px; font-weight: bold; color: white;">Profile Info</h4>
             </div>
             <ion-card-content style="background-color: #e9e6e6;">
@@ -105,12 +109,11 @@
             </ion-card-content>
           </ion-card>
 
-          <!-- Admin Account Table -->
+          <!-- Admin Table -->
           <ion-card style="margin-bottom: 20px;">
-            <div style="background: #07055d; padding: 12px; text-align: center; border-bottom: none; border: 1px solid #07055d;">
+            <div style="background: #07055d; padding: 12px; text-align: center;">
               <h4 style="margin: 0 auto; font-size: 18px; font-weight: bold; color: white;">Admin Account Management</h4>
             </div>
-
             <ion-card-content style="background-color: #f4f4f4;">
               <div style="overflow-x: auto;">
                 <table style="width: 100%; border-collapse: collapse; font-size: 14px; min-width: 700px;">
@@ -123,14 +126,14 @@
                     </tr>
                   </thead>
                   <tbody>
-                    <tr 
-                      v-for="admin in admins.filter(a => a.status === 'Active' || a.status === 'Inactive')" 
+                    <tr
+                      v-for="admin in admins"
                       :key="admin.id"
                       style="border-bottom: 1px solid #07055d; background-color: #c9c8c8;"
                     >
-                      <td style="padding: 10px; border-right: 1px solid #07055D;">{{ admin.name }}</td>
-                      <td style="padding: 10px; border-right: 1px solid #07055D;">{{ admin.email }}</td>
-                      <td style="padding: 10px; border-right: 1px solid #07055D;">
+                      <td style="padding: 10px;">{{ admin.name }}</td>
+                      <td style="padding: 10px;">{{ admin.email }}</td>
+                      <td style="padding: 10px;">
                         <span :style="{
                           padding: '4px 10px',
                           borderRadius: '12px',
@@ -143,18 +146,18 @@
                         </span>
                       </td>
                       <td style="padding: 10px; text-align: center;">
-                        <ion-button 
-                          size="small" 
-                          fill="solid" 
-                          style="--background: #f1c204; --color: black; margin-right: 5px; font-weight: 600; --border-radius: 6px;" 
+                        <ion-button
+                          size="small"
+                          fill="solid"
+                          style="--background: #f1c204; --color: black; margin-right: 5px;"
                           @click="openAccountModal(admin)"
                         >
                           Edit
                         </ion-button>
-                        <ion-button 
-                          size="small" 
-                          style="--background: #ff0707; --color: white; margin-right: 5px; font-weight: 600; --border-radius: 6px;" 
-                          fill="solid" 
+                        <ion-button
+                          size="small"
+                          style="--background: #ff0707; --color: white;"
+                          fill="solid"
                           @click="toggleAdminStatus(admin)"
                         >
                           {{ admin.status === 'Active' ? 'Deactivate' : 'Activate' }}
@@ -165,7 +168,7 @@
                 </table>
               </div>
 
-              <ion-button expand="block" style="--background: green; --color: white; margin-right: 5px; font-weight: 600; --border-radius: 6px; margin-top: 10px;" @click="openAddAdminAccountModal">
+              <ion-button expand="block" style="--background: green; --color: white; margin-top: 10px;" @click="openAddAdminAccountModal">
                 Add New Admin
               </ion-button>
             </ion-card-content>
@@ -174,11 +177,8 @@
       </div>
     </ion-content>
 
-    <!-- Footer -->
     <div class="footer">
-      <ion-text>
-        <small>&copy; All Rights Reserved PPG 2025.</small>
-      </ion-text>
+      <ion-text><small>&copy; All Rights Reserved PPG 2025.</small></ion-text>
     </div>
 
     <!-- Profile Modal -->
@@ -190,12 +190,12 @@
         </div>
         <div style="padding:15px 15px; background:#D9D9D9;">
           <label><b>Name:</b></label>
-          <input v-model="selectedAdmin.name" placeholder="Enter name" style="width:100%; padding:6px; margin-bottom:8px; border-radius:4px;"/>
+          <input v-model="selectedAdmin.name" placeholder="Enter name" style="width:100%; padding:6px; margin-bottom:8px; border-radius:4px;" />
           <label><b>Email:</b></label>
-          <input v-model="selectedAdmin.email" placeholder="Enter email" style="width:100%; padding:6px; margin-bottom:8px; border-radius:4px;"/>
+          <input v-model="selectedAdmin.email" placeholder="Enter email" style="width:100%; padding:6px; margin-bottom:8px; border-radius:4px;" />
           <label><b>New Password:</b></label>
-          <input type="password" v-model="selectedAdmin.password" placeholder="Enter new password to change" style="width:100%; padding:6px; margin-bottom:8px; border-radius:4px;"/>
-          <ion-button expand="block" style="--background: #07055d; --color: #ffff00; margin-top: 12px;" @click="updateAdminProfile">
+          <input type="password" v-model="selectedAdmin.password" placeholder="Enter new password" style="width:100%; padding:6px; margin-bottom:8px; border-radius:4px;" />
+          <ion-button expand="block" style="--background: #07055d; --color: #ffff00; margin-top: 12px;" @click="selectedAdmin.isLoggedIn ? updateLoggedInAdminProfile() : updateOtherAdminProfile()">
             Update
           </ion-button>
         </div>
@@ -211,11 +211,11 @@
         </div>
         <div style="padding:15px 15px; background:#D9D9D9;">
           <label><b>Name:</b></label>
-          <input v-model="newAdminAccount.name" placeholder="Enter name" style="width:100%; padding:6px; margin-bottom:8px; border-radius:4px;"/>
+          <input v-model="newAdminAccount.name" placeholder="Enter name" style="width:100%; padding:6px; margin-bottom:8px; border-radius:4px;" />
           <label><b>Email:</b></label>
-          <input v-model="newAdminAccount.email" placeholder="Enter email" style="width:100%; padding:6px; margin-bottom:8px; border-radius:4px;"/>
+          <input v-model="newAdminAccount.email" placeholder="Enter email" style="width:100%; padding:6px; margin-bottom:8px; border-radius:4px;" />
           <label><b>Password:</b></label>
-          <input type="password" v-model="newAdminAccount.password" placeholder="Enter password" style="width:100%; padding:6px; margin-bottom:8px; border-radius:4px;"/>
+          <input type="password" v-model="newAdminAccount.password" placeholder="Enter password" style="width:100%; padding:6px; margin-bottom:8px; border-radius:4px;" />
           <ion-button expand="block" style="--background: #07055d; --color: #ffff00; margin-top: 12px;" @click="addNewAdminAccount">
             Add
           </ion-button>
@@ -226,61 +226,55 @@
 </template>
 
 <script>
-import {
-  IonButton, IonCard, IonCardContent, IonContent, IonHeader, IonIcon, IonInput, IonModal, IonPage, IonText, IonToolbar
-} from '@ionic/vue';
-import { notifications } from 'ionicons/icons';
+import { IonButton, IonCard, IonCardContent, IonContent, IonHeader, IonInput, IonModal, IonPage, IonText, IonToolbar } from '@ionic/vue';
 import Swal from 'sweetalert2';
 import { ref, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
 import axios from 'axios';
 
 export default {
-  components: { IonButton, IonCard, IonCardContent, IonContent, IonHeader, IonIcon, IonInput, IonPage, IonText, IonToolbar, IonModal },
+  components: { IonButton, IonCard, IonCardContent, IonContent, IonHeader, IonInput, IonPage, IonText, IonToolbar, IonModal },
   setup() {
     const router = useRouter();
     const API_URL = 'http://localhost:5000/api/users';
-
     const showStudentMenu = ref(false);
     const showAcadMenu = ref(false);
     const showEventMenu = ref(false);
-    const toggleStudentMenu = () => showStudentMenu.value = !showStudentMenu.value;
-    const toggleAcadMenu = () => showAcadMenu.value = !showAcadMenu.value;
-    const toggleEventMenu = () => showEventMenu.value = !showEventMenu.value;
-
-    const loggedInAdmin = ref({ user_id: null, f_name: '', l_name: '', email: '', password: '', role: null, status: null });
+    const loggedInAdmin = ref({});
     const admins = ref([]);
-    const selectedAdmin = ref({ id: null, name: '', email: '', password: '', status: 'Active' });
+    const selectedAdmin = ref({ id: null, name: '', email: '', password: '', status: '', isLoggedIn: false });
     const newAdminAccount = ref({ name: '', email: '', password: '' });
     const isProfileModalOpen = ref(false);
     const isAddAdminAccountModalOpen = ref(false);
 
+    const toggleStudentMenu = () => showStudentMenu.value = !showStudentMenu.value;
+    const toggleAcadMenu = () => showAcadMenu.value = !showAcadMenu.value;
+    const toggleEventMenu = () => showEventMenu.value = !showEventMenu.value;
+
     const fetchAdmins = async () => {
-      try {
-        const res = await axios.get(API_URL);
-        admins.value = res.data
-          .filter(a => a.role === 0)
-          .map(a => ({
-            id: a.user_id,
-            name: [a.f_name, a.m_name, a.l_name].filter(Boolean).join(' '),
-            email: a.email,
-            status: a.status === 0 ? 'Active' : 'Inactive'
-          }));
-      } catch (err) {
-        console.error(err);
-      }
+      const res = await axios.get(API_URL);
+      admins.value = res.data
+        .filter(a => a.role === 0 && (a.status === 1 || a.status === 2))
+        .map(a => ({
+          id: a.user_id,
+          name: [a.f_name, a.m_name, a.l_name].filter(Boolean).join(' '),
+          email: a.email,
+          status: a.status === 2 ? 'Active' : 'Inactive'
+        }));
     };
 
     onMounted(async () => {
       try {
-        const res = await axios.get(`http://localhost:5000/api/check-admin-session`, { withCredentials: true });
-        if (res.data.loggedIn) loggedInAdmin.value = res.data.admin;
-        else router.replace('/adminLogIn');
-      } catch (err) {
-        console.error(err);
-        router.replace('/account-center');
+        const res = await axios.get('http://localhost:5000/api/check-admin-session', { withCredentials: true });
+        if (res.data.loggedIn) {
+          loggedInAdmin.value = res.data.admin;
+        } else {
+          router.replace('/adminLogIn');
+        }
+      } catch {
+        router.replace('/adminLogIn');
       }
-      fetchAdmins();
+      await fetchAdmins();
     });
 
     const confirmLogout = async () => {
@@ -295,82 +289,120 @@ export default {
           document.documentElement.classList.remove('swal2-height-auto');
         },
       });
-
       if (result.isConfirmed) {
-        try {
-          await axios.post('http://localhost:5000/api/users/admin-logout', {}, { withCredentials: true });
-          router.push('/adminLogIn'); // redirect to login page
-        } catch (err) {
-          console.error(err);
-          Swal.fire({
-            icon: 'error',
-            title: 'Error',
-            text: 'Logout failed',
-            didOpen: () => {
-              document.body.classList.remove('swal2-height-auto');
-              document.documentElement.classList.remove('swal2-height-auto');
-            }
-          });
-        }
+        await axios.post('http://localhost:5000/api/users/admin-logout', {}, { withCredentials: true });
+        router.push('/adminLogIn');
       }
     };
 
     const openProfileModal = () => {
       selectedAdmin.value = {
         id: loggedInAdmin.value.user_id,
-        name: `${loggedInAdmin.value.f_name} ${loggedInAdmin.value.l_name}`,
+        name: `${loggedInAdmin.value.f_name} ${loggedInAdmin.value.m_name} ${loggedInAdmin.value.l_name}`,
         email: loggedInAdmin.value.email,
-        password: ''
+        password: '',
+        status: loggedInAdmin.value.status,
+        isLoggedIn: true
       };
       isProfileModalOpen.value = true;
     };
 
     const openAccountModal = (admin) => {
-      selectedAdmin.value = { id: admin.id, name: admin.name, email: admin.email, password: '', status: admin.status };
+      selectedAdmin.value = { ...admin, password: '', isLoggedIn: false };
       isProfileModalOpen.value = true;
     };
 
-   const updateAdminProfile = async () => {
+    const updateLoggedInAdminProfile = async () => {
       const adminId = selectedAdmin.value.id;
       const nameParts = selectedAdmin.value.name.split(' ');
-      const f_name = nameParts[0];
-      const m_name = nameParts[1] || '';
-      const l_name = nameParts.slice(2).join(' ') || '';
-
       const payload = {
-        f_name,
-        m_name,
-        l_name,
+        f_name: nameParts[0],
+        m_name: nameParts[1] || '',
+        l_name: nameParts.slice(2).join(' ') || '',
         email: selectedAdmin.value.email,
         role: 0,
+        status: loggedInAdmin.value.status // preserve existing status
       };
-      if (selectedAdmin.value.password.trim() !== '') payload.password = selectedAdmin.value.password;
+      if (selectedAdmin.value.password.trim()) payload.password = selectedAdmin.value.password;
 
       try {
         const res = await axios.put(`${API_URL}/${adminId}`, payload, { withCredentials: true });
-
-        // Replace loggedInAdmin with the returned admin from the backend
-        if (res.data.admin) loggedInAdmin.value = res.data.admin;
-
+        if (res.data.admin) {
+          loggedInAdmin.value = res.data.admin;
+          sessionStorage.setItem('loggedInAdmin', JSON.stringify(res.data.admin));
+        }
         isProfileModalOpen.value = false;
+        Swal.fire({ icon: 'success', title: 'Profile Updated!', timer: 1500, showConfirmButton: false, didOpen: () => {
+          document.body.classList.remove('swal2-height-auto');
+          document.documentElement.classList.remove('swal2-height-auto');
+        }});
+      } catch {
+        Swal.fire({ icon: 'error', title: 'Error', text: 'Failed to update profile', didOpen: () => {
+          document.body.classList.remove('swal2-height-auto');
+          document.documentElement.classList.remove('swal2-height-auto');
+        }});
+      }
+    };
+
+    const updateOtherAdminProfile = async () => {
+      const adminId = selectedAdmin.value.id;
+      const nameParts = selectedAdmin.value.name.split(' ');
+      const payload = {
+        f_name: nameParts[0],
+        m_name: nameParts[1] || '',
+        l_name: nameParts.slice(2).join(' ') || '',
+        email: selectedAdmin.value.email,
+        role: 0,
+        status: selectedAdmin.value.status === 'Active' ? 2 : 1 // map to numeric
+      };
+      if (selectedAdmin.value.password.trim()) payload.password = selectedAdmin.value.password;
+
+      try {
+        await axios.put(`${API_URL}/${adminId}`, payload, { withCredentials: true });
+        isProfileModalOpen.value = false;
+        await fetchAdmins();
+        Swal.fire({ icon: 'success', title: 'Admin Updated!', timer: 1500, showConfirmButton: false, didOpen: () => {
+          document.body.classList.remove('swal2-height-auto');
+          document.documentElement.classList.remove('swal2-height-auto');
+        }});
+      } catch {
+        Swal.fire({ icon: 'error', title: 'Error', text: 'Failed to update admin', didOpen: () => {
+          document.body.classList.remove('swal2-height-auto');
+          document.documentElement.classList.remove('swal2-height-auto');
+        }});
+      }
+    };
+
+    const toggleAdminStatus = async (admin) => {
+      const action = admin.status === 'Active' ? 'deactivate' : 'activate';
+      const result = await Swal.fire({
+        title: `Are you sure to ${action}?`,
+        icon: 'warning',
+        showCancelButton: true,
+        didOpen: () => {
+          document.body.classList.remove('swal2-height-auto');
+          document.documentElement.classList.remove('swal2-height-auto');
+        }
+      });
+
+      if (result.isConfirmed) {
+        const nameParts = admin.name.split(' ');
+        await axios.put(`${API_URL}/${admin.id}`, {
+          f_name: nameParts[0],
+          m_name: nameParts[1] || '',
+          l_name: nameParts.slice(2).join(' ') || '',
+          email: admin.email,
+          password: '',
+          role: 0,
+          status: admin.status === 'Active' ? 1 : 2
+        });
         await fetchAdmins();
 
         Swal.fire({
           icon: 'success',
-          title: 'Updated!',
-          timer: 1500,
+          title: `Admin ${action}d!`,
+          timer: 1200,
           showConfirmButton: false,
-          didOpen: () => {
-            document.body.classList.remove('swal2-height-auto');
-            document.documentElement.classList.remove('swal2-height-auto');
-          }
-        });
-      } catch (err) {
-        console.error(err);
-        Swal.fire({
-          icon: 'error',
-          title: 'Error',
-          text: 'Failed to update profile',
           didOpen: () => {
             document.body.classList.remove('swal2-height-auto');
             document.documentElement.classList.remove('swal2-height-auto');
@@ -379,35 +411,28 @@ export default {
       }
     };
 
+    const openAddAdminAccountModal = () => {
+      newAdminAccount.value = { name: '', email: '', password: '' };
+      isAddAdminAccountModalOpen.value = true;
+    };
 
-    const toggleAdminStatus = async (admin) => {
-  const action = admin.status === 'Active' ? 'deactivate' : 'activate';
-  const result = await Swal.fire({
-    title: `Are you sure to ${action}?`,
-    icon: 'warning',
-    showCancelButton: true,
-    didOpen: () => {
-      document.body.classList.remove('swal2-height-auto');
-      document.documentElement.classList.remove('swal2-height-auto');
-    }
-  });
-
-  if (result.isConfirmed) {
-    try {
-      const nameParts = admin.name.split(' ');
-      await axios.put(`${API_URL}/${admin.id}`, {
+    const addNewAdminAccount = async () => {
+      const nameParts = newAdminAccount.value.name.split(' ');
+      const payload = {
         f_name: nameParts[0],
         m_name: nameParts[1] || '',
         l_name: nameParts.slice(2).join(' ') || '',
-        email: admin.email,
-        password: '',
+        email: newAdminAccount.value.email,
+        password: newAdminAccount.value.password,
         role: 0,
-        status: admin.status === 'Active' ? 1 : 0
-      });
+        status: 2
+      };
+      await axios.post(API_URL, payload);
+      isAddAdminAccountModalOpen.value = false;
       await fetchAdmins();
       Swal.fire({
         icon: 'success',
-        title: `Admin ${action}d!`,
+        title: 'New Admin Added!',
         timer: 1500,
         showConfirmButton: false,
         didOpen: () => {
@@ -415,94 +440,35 @@ export default {
           document.documentElement.classList.remove('swal2-height-auto');
         }
       });
-    } catch (err) {
-      console.error(err);
-      Swal.fire({
-        icon: 'error',
-        title: 'Error',
-        text: 'Failed to update status',
-        didOpen: () => {
-          document.body.classList.remove('swal2-height-auto');
-          document.documentElement.classList.remove('swal2-height-auto');
-        }
-      });
-    }
-  }
-};
-
-
-    const openAddAdminAccountModal = () => {
-      newAdminAccount.value = { name: '', email: '', password: '' };
-      isAddAdminAccountModalOpen.value = true;
     };
 
-   const addNewAdminAccount = async () => {
-  if (!newAdminAccount.value.name || !newAdminAccount.value.email || !newAdminAccount.value.password) {
-    Swal.fire({
-      icon: 'error',
-      title: 'Error',
-      text: 'All fields are required',
-      didOpen: () => {
-        document.body.classList.remove('swal2-height-auto');
-        document.documentElement.classList.remove('swal2-height-auto');
-      }
-    });
-    return;
-  }
-
-  const nameParts = newAdminAccount.value.name.split(' ');
-  try {
-    await axios.post(API_URL, {
-      f_name: nameParts[0],
-      m_name: nameParts[1] || '',
-      l_name: nameParts.slice(2).join(' ') || '',
-      email: newAdminAccount.value.email,
-      password: newAdminAccount.value.password,
-      role: 0,
-      status: 0
-    });
-
-    isAddAdminAccountModalOpen.value = false;
-    await fetchAdmins();
-
-    Swal.fire({
-      icon: 'success',
-      title: 'Added!',
-      text: 'New admin added',
-      timer: 1500,
-      showConfirmButton: false,
-      didOpen: () => {
-        document.body.classList.remove('swal2-height-auto');
-        document.documentElement.classList.remove('swal2-height-auto');
-      }
-    });
-  } catch (err) {
-    console.error(err);
-    Swal.fire({
-      icon: 'error',
-      title: 'Error',
-      text: 'Failed to add admin',
-      didOpen: () => {
-        document.body.classList.remove('swal2-height-auto');
-        document.documentElement.classList.remove('swal2-height-auto');
-      }
-    });
-  }
-};
     return {
-      notifications,
-      showStudentMenu, showAcadMenu, showEventMenu,
-      toggleStudentMenu, toggleAcadMenu, toggleEventMenu,
-      loggedInAdmin, admins, confirmLogout,
-      selectedAdmin, newAdminAccount,
-      isProfileModalOpen, isAddAdminAccountModalOpen,
-      openProfileModal, openAccountModal,
-      updateAdminProfile, toggleAdminStatus,
-      openAddAdminAccountModal, addNewAdminAccount
+      router,
+      showStudentMenu,
+      showAcadMenu,
+      showEventMenu,
+      loggedInAdmin,
+      admins,
+      selectedAdmin,
+      newAdminAccount,
+      isProfileModalOpen,
+      isAddAdminAccountModalOpen,
+      toggleStudentMenu,
+      toggleAcadMenu,
+      toggleEventMenu,
+      openProfileModal,
+      openAccountModal,
+      updateLoggedInAdminProfile,
+      updateOtherAdminProfile,
+      toggleAdminStatus,
+      confirmLogout,
+      openAddAdminAccountModal,
+      addNewAdminAccount
     };
   }
 };
 </script>
+
 
 <style scoped>
 .toolbar-container::part(backdrop) {

@@ -19,5 +19,7 @@ router.post('/auth-login', studentController.loginStudent);
 router.post('/verify-twofa', studentController.verifyTwoFA);
 router.post('/resend-twofa', studentController.resendTwoFactorCode);
 router.post('/logout-all', isAuthenticated, studentController.logoutStudent);
+router.get('/count', studentController.countStudents);
+router.get('/attendance-logs/:student_id', studentController.getAttendanceLogs);
 
 module.exports = router;

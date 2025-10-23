@@ -47,11 +47,15 @@
                 <li><router-link to="/attendance-records" class="sub">View Attendance Records</router-link></li>
               </ul>
             </li>
-            <li><router-link to="/Request" class="sidebar-link">Request Management</router-link></li>
-            <li><router-link to="/Notif" class="sidebar-link">Notification Management</router-link></li>
-            <li><router-link to="/Feed" class="sidebar-link">Feedback Management</router-link></li>
-            <li><router-link to="/Update" class="sidebar-link">Featured Updates</router-link></li>
-            <li><router-link to="/account-center" class="sidebar-link">Account Center</router-link></li>
+             <template v-if="admin && admin.status !== 0">
+              <li><router-link to="/Request" class="sidebar-link">Request Management</router-link></li>
+              <li><router-link to="/Notif" class="sidebar-link">Notification Management</router-link></li>
+              <li><router-link to="/Feed" class="sidebar-link">Feedback Management</router-link></li>
+              <li><router-link to="/Update" class="sidebar-link">Featured Updates</router-link></li>
+            </template>
+            <template v-if="admin && admin.status !== 2">
+              <li><router-link to="/Account-center" class="sidebar-link">Account Center</router-link></li>
+            </template>
             <li>
               <a href="javascript:void(0);" class="sidebar-link" @click="confirmLogout">
                   Log Out
@@ -62,14 +66,12 @@
         <!-- Main Content -->
         <div class="main-content">
           <div class="event-rec-summary">
-            <h3>Event Attendance Records Summary</h3>
             <table class="event-table">
               <thead>
                 <tr>
                   <th>Event Name</th>
                   <th>Date</th>
                   <th>Total Attendees</th>
-                  <th>Total Absences</th>
                   <th>Incomplete Attendance</th>
                   <th>Feedbacks</th>
                   <th>Event Status</th>
@@ -83,7 +85,6 @@
                   <td>{{ eventName }}</td>
                   <td>{{ eventDate }}</td>
                   <td>{{ totalAttendees }}</td>
-                  <td>{{ totalAbsences }}</td>
                   <td>{{ incompleteAttendance }}</td>
                   <td>{{ feedbacks }}</td>
                   <td>
@@ -94,7 +95,7 @@
             </table>
           </div>
 
-          <h4>Attendance Details</h4>
+          <h4> Event Attendance Details</h4>
 
           <ion-row class="ion-align-items-center ion-justify-content-between" style="margin-bottom: 10px;">
             <ion-col size="7">
@@ -116,9 +117,7 @@
                   <th >Time In (PM)</th>
                   <th class="break">Mid-Event Check (PM)</th>
                   <th>Time Out (PM)</th>
-                  <th>VA</th>
                   <th>AR</th>
-                  <th>Remarks</th>
                   <th >Attendance Status</th>
                   <th>Actions</th>
                 </tr>
@@ -133,11 +132,7 @@
                   <td>{{ detail.afternoontimeIn }}</td>
                   <td>{{ detail.afternoonmidEventcheck }}</td>
                   <td>{{ detail.afternoontimeOut }}</td>
-                  <td>{{ detail.afternoontimeOut }}</td>
-                  <td>{{ detail.afternoontimeOut }}</td>
-                  <td>
-                    <span :style="getRemarksStyle(detail.remarks)">{{ detail.remarks || '-' }}</span>
-                  </td>
+                  <td>{{ detail.absenceReqStatus }}</td>
                   <td>
                     <span :style="getAttendanceStyle(detail.attendanceStats)">{{ detail.attendanceStats }}</span>
                   </td>
@@ -184,19 +179,29 @@
 </template>
 
 <script setup lang="ts">
-import { IonButton, IonCol, IonContent, IonHeader, IonIcon, IonPage, IonRow, IonSearchbar, IonText, IonToolbar } from '@ionic/vue';
-import { notifications } from 'ionicons/icons';
-import jsPDF from 'jspdf';
-import autoTable from 'jspdf-autotable';
-import Swal from 'sweetalert2';
-import { computed, ref, onMounted } from 'vue';
-import { useRouter, useRoute } from 'vue-router';
-import axios from 'axios';
+import {
+  IonButton,
+  IonCol,
+  IonContent,
+  IonHeader,
+  IonIcon,
+  IonPage,
+  IonRow,
+  IonSearchbar,
+  IonText,
+  IonToolbar,
+} from "@ionic/vue";
+import { notifications } from "ionicons/icons";
+import jsPDF from "jspdf";
+import autoTable from "jspdf-autotable";
+import Swal from "sweetalert2";
+import { computed, ref, onMounted } from "vue";
+import { useRouter, useRoute } from "vue-router";
+import axios from "axios";
 
 /* router & route */
 const router = useRouter();
 const route = useRoute();
-/* read any of possible param names so undefined won't happen */
 const eventId = route.params.id || route.params.eventID || route.params.event_id;
 
 /* Sidebar Menu */
@@ -207,68 +212,61 @@ const toggleStudentMenu = () => (showStudentMenu.value = !showStudentMenu.value)
 const toggleAcadMenu = () => (showAcadMenu.value = !showAcadMenu.value);
 const toggleEventMenu = () => (showEventMenu.value = !showEventMenu.value);
 
-/* Logout (keeps didOpen removal) */
- const confirmLogout = async () => {
+/* Logout */
+const confirmLogout = async () => {
   const result = await Swal.fire({
-    title: 'Are you sure?',
-    text: 'You will be logged out.',
-    icon: 'warning',
+    title: "Are you sure?",
+    text: "You will be logged out.",
+    icon: "warning",
     showCancelButton: true,
-    confirmButtonText: 'Yes, log me out!',
+    confirmButtonText: "Yes, log me out!",
     didOpen: () => {
-      document.body.classList.remove('swal2-height-auto');
-      document.documentElement.classList.remove('swal2-height-auto');
+      document.body.classList.remove("swal2-height-auto");
+      document.documentElement.classList.remove("swal2-height-auto");
     },
   });
 
   if (result.isConfirmed) {
     try {
-      await axios.post('http://localhost:5000/api/users/admin-logout', {}, { withCredentials: true });
-      router.push('/adminLogIn'); // redirect to login page
+      await axios.post(
+        "http://localhost:5000/api/users/admin-logout",
+        {},
+        { withCredentials: true }
+      );
+      router.push("/adminLogIn");
     } catch (err) {
       console.error(err);
       Swal.fire({
-        icon: 'error',
-        title: 'Error',
-        text: 'Logout failed',
-        didOpen: () => {
-          document.body.classList.remove('swal2-height-auto');
-          document.documentElement.classList.remove('swal2-height-auto');
-        }
+        icon: "error",
+        title: "Error",
+        text: "Logout failed",
       });
     }
   }
 };
 
 /* Generate Report */
-/* Generate Report */
 const generateReport = () => {
-  if (eventId) {
-    window.location.href = `/generate-report/${eventId}`;
-    // or: window.location.assign(`/generate-report/${eventId}`);
-  } else {
+  if (eventId) window.location.href = `/generate-report/${eventId}`;
+  else {
     Swal.fire({
-      icon: 'error',
-      title: 'Missing Event ID',
-      text: 'Unable to generate report because event ID was not found.',
-      didOpen: () => {
-        document.body.classList.remove('swal2-height-auto');
-        document.documentElement.classList.remove('swal2-height-auto');
-      }
+      icon: "error",
+      title: "Missing Event ID",
+      text: "Unable to generate report because event ID was not found.",
     });
   }
 };
 
 /* state for summary */
-const eventName = ref('');
-const eventDate = ref('');
+const eventName = ref("");
+const eventDate = ref("");
 const totalAttendees = ref(0);
 const totalAbsences = ref(0);
 const incompleteAttendance = ref(0);
 const feedbacks = ref(0);
-const eventStats = ref('');
+const eventStats = ref("");
 
-/* Attendance details structure */
+/* Attendance details */
 interface AttendanceDetail {
   attendance_id: number;
   studName: string;
@@ -276,6 +274,9 @@ interface AttendanceDetail {
   timeIn: string | null;
   midEventcheck: string | null;
   timeOut: string | null;
+  afternoontimeIn: string | null;
+  afternoonmidEventcheck: string | null;
+  afternoontimeOut: string | null;
   absenceReq: string | null;
   remarks: string | null;
   attendanceStats: string;
@@ -283,27 +284,26 @@ interface AttendanceDetail {
   start_date_time?: string;
   end_date_time?: string;
   event_name?: string;
-  afternoontimeIn: string | null;
-  afternoonmidEventcheck: string | null;
-  afternoontimeOut: string | null;
+  absenceReqStatus: string | null;
 }
 
 const attendanceDetails = ref<AttendanceDetail[]>([]);
 
-/* helper: safe time formatting (accepts ISO or already formatted) */
+/* helpers */
 function formatTimeSafe(val: any) {
-  if (!val && val !== 0) return '';
-  // If it's already a formatted string like "12:34 PM", return as-is
-  if (typeof val === 'string' && val.match(/(AM|PM|am|pm)/)) return val;
+  if (!val && val !== 0) return "";
+  if (typeof val === "string" && val.match(/(AM|PM|am|pm)/)) return val;
   const d = new Date(val);
   if (!isNaN(d.getTime())) {
-    return d.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit', hour12: true });
+    return d.toLocaleTimeString(undefined, {
+      hour: "2-digit",
+      minute: "2-digit",
+      hour12: true,
+    });
   }
-  // fallback to raw string
   return String(val);
 }
 
-/* helper: parse date safely */
 function parseDateSafe(val: any) {
   if (!val) return null;
   const d = new Date(val);
@@ -312,18 +312,16 @@ function parseDateSafe(val: any) {
   return isNaN(parsed) ? null : new Date(parsed);
 }
 
-/* Fetch attendance details */
+/* Fetch Attendance Details */
 const fetchAttendanceDetails = async () => {
   try {
-    if (!eventId) {
-      console.error('No eventId param found in route.');
-      return;
-    }
+    if (!eventId) return;
 
-    const res = await axios.get(`http://localhost:5000/api/attendance/details/${eventId}`);
+    const res = await axios.get(
+      `http://localhost:5000/api/attendance/details/${eventId}`
+    );
     const rawList = res.data?.attendanceDetails ?? [];
 
-    // Map API response to AttendanceDetail
     attendanceDetails.value = rawList.map((d: any) => {
       const timeIn = formatTimeSafe(d.timeIn);
       const midEventcheck = formatTimeSafe(d.midEventcheck);
@@ -332,33 +330,40 @@ const fetchAttendanceDetails = async () => {
       const afternoonmidEventcheck = formatTimeSafe(d.afternoonmidEventcheck);
       const afternoontimeOut = formatTimeSafe(d.afternoontimeOut);
 
-      const startDate = parseDateSafe(d.startDateTime);
-      const endDate = parseDateSafe(d.endDateTime);
+      const startDate = parseDateSafe(d.start_date_time);
+      const endDate = parseDateSafe(d.end_date_time);
       const now = new Date();
       const eventEnded = endDate ? now > endDate : false;
 
-      let remarks = d.remarks || '';
-      let attendanceStats = d.attendanceStats || 'Unsettled';
+      let remarks = d.remarks || "";
+      let attendanceStats = d.attendanceStats || "Unsettled";
 
-      // Compute derived remarks & status
-      const hasIn = !!timeIn;
-      const hasMid = !!midEventcheck;
-      const hasOut = !!timeOut;
+      // ✅ FIXED ATTENDANCE LOGIC
+      const validAM =
+        timeIn && midEventcheck && midEventcheck !== "Missed" && timeOut;
+      const validPM =
+        afternoontimeIn &&
+        afternoonmidEventcheck &&
+        afternoonmidEventcheck !== "Missed" &&
+        afternoontimeOut;
+      const allComplete = validAM && validPM;
 
-      if (hasIn && hasMid && hasOut) {
-        remarks = 'Present';
-        attendanceStats = 'Complete';
-      } else if (eventEnded && !hasIn && !hasMid && !hasOut) {
-        remarks = 'Missed';
-        if (!attendanceStats || attendanceStats.toLowerCase() === 'unsettled') {
-          attendanceStats = 'Unsettled';
-        }
-      } else if (attendanceStats.toLowerCase() === 'excused') {
-        remarks = remarks || 'Excused';
-        attendanceStats = 'Excused';
-      } else if (!hasIn || !hasMid || !hasOut) {
-        attendanceStats = attendanceStats || 'Unsettled';
-        remarks = remarks || 'Incomplete';
+      if (Number(d.canSettle ?? 0) === 0) {
+        // ✅ Settled record — highest priority
+        remarks = "";
+        attendanceStats = "Settled";
+      } else if (d.absenceReqStatus === "Approved") {
+        remarks = "Excused";
+        attendanceStats = "Excused";
+      } else if (allComplete) {
+        remarks = "";
+        attendanceStats = "Complete";
+      } else if (eventEnded && !validAM && !validPM) {
+        remarks = "Missed";
+        attendanceStats = "Unsettled";
+      } else {
+        remarks = "Incomplete";
+        attendanceStats = "Unsettled";
       }
 
       return {
@@ -371,57 +376,84 @@ const fetchAttendanceDetails = async () => {
         afternoontimeIn,
         afternoonmidEventcheck,
         afternoontimeOut,
-        absenceReq: d.absenceReq ?? '',
+        absenceReq: d.absenceReq ?? "",
         remarks,
         attendanceStats,
         canSettle: Number(d.canSettle ?? 0) === 1,
-        start_date_time: d.startDateTime,
-        end_date_time: d.endDateTime,
+        start_date_time: d.start_date_time,
+        end_date_time: d.end_date_time,
         event_name: d.event_name,
+        absenceReqStatus: d.absenceReqStatus,
       } as AttendanceDetail;
     });
 
-    // Update summary
+    // summary
     if (attendanceDetails.value.length > 0) {
       const first = attendanceDetails.value[0];
-      eventName.value = first.event_name ?? '';
-      eventDate.value = parseDateSafe(first.start_date_time)?.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' }) || '';
+      eventName.value = first.event_name ?? "";
+
       const start = parseDateSafe(first.start_date_time);
       const end = parseDateSafe(first.end_date_time);
       const now = new Date();
+      const dateOptions = {
+        month: "short",
+        day: "numeric",
+        year: "numeric",
+      };
+      const timeOptions = {
+        hour: "2-digit",
+        minute: "2-digit",
+        hour12: true,
+        timeZone: "Asia/Manila",
+      };
+
       if (start && end) {
-        eventStats.value = now < start ? 'Upcoming' : now <= end ? 'Ongoing' : 'Done';
-      } else {
-        eventStats.value = 'Unknown';
+        const startDate = start.toLocaleDateString("en-PH", dateOptions);
+        const startTime = start.toLocaleTimeString("en-PH", timeOptions);
+        const endDate = end.toLocaleDateString("en-PH", dateOptions);
+        const endTime = end.toLocaleTimeString("en-PH", timeOptions);
+        eventDate.value =
+          startDate === endDate
+            ? `${startDate} — ${startTime} to ${endTime}`
+            : `${startDate} ${startTime} — ${endDate} ${endTime}`;
+        eventStats.value =
+          now < start ? "Upcoming" : now <= end ? "Ongoing" : "Done";
       }
 
       totalAttendees.value = attendanceDetails.value.length;
-      totalAbsences.value = attendanceDetails.value.filter(r => r.remarks.toLowerCase() === 'missed').length;
-      incompleteAttendance.value = attendanceDetails.value.filter(r => r.remarks.toLowerCase() === 'incomplete').length;
+      totalAbsences.value = attendanceDetails.value.filter(
+        (r) => r.remarks === "Missed"
+      ).length;
+      incompleteAttendance.value = attendanceDetails.value.filter(
+        (r) => r.remarks === "Incomplete"
+      ).length;
       feedbacks.value = 0;
-    } else {
-      eventName.value = '';
-      eventDate.value = '';
-      totalAttendees.value = 0;
-      totalAbsences.value = 0;
-      incompleteAttendance.value = 0;
-      feedbacks.value = 0;
-      eventStats.value = '';
     }
   } catch (err) {
-    console.error('Error fetching attendance details:', err);
+    console.error(err);
   }
 };
 
-
-onMounted(() => {
+/* session check */
+const admin = ref<any>(null);
+onMounted(async () => {
+  try {
+    const res = await axios.get(
+      "http://localhost:5000/api/check-admin-session",
+      { withCredentials: true }
+    );
+    if (res.data.loggedIn && res.data.admin) admin.value = res.data.admin;
+    else router.replace("/adminLogIn");
+  } catch {
+    router.replace("/adminLogIn");
+  }
   fetchAttendanceDetails();
 });
 
-/* Sorting / Searching / Pagination (same logic preserved) */
-const sortColumn = ref('');
-const sortOrder = ref<'asc' | 'desc'>('asc');
-const searchQuery = ref('');
+/* Sort / Search / Pagination */
+const sortColumn = ref("");
+const sortOrder = ref<"asc" | "desc">("asc");
+const searchQuery = ref("");
 const currentPage = ref(1);
 const itemsPerPage = 10;
 
@@ -429,135 +461,234 @@ const filteredData = computed(() => {
   let result = [...attendanceDetails.value];
   if (searchQuery.value) {
     const q = searchQuery.value.toLowerCase();
-    result = result.filter(item => Object.values(item).some(val => String(val ?? '').toLowerCase().includes(q)));
+    result = result.filter((item) =>
+      Object.values(item).some((val) =>
+        String(val ?? "").toLowerCase().includes(q)
+      )
+    );
   }
   if (sortColumn.value) {
     const column = sortColumn.value as keyof AttendanceDetail;
     result.sort((a, b) => {
-      const aVal = String(a[column] ?? '').toLowerCase();
-      const bVal = String(b[column] ?? '').toLowerCase();
-      if (aVal < bVal) return sortOrder.value === 'asc' ? -1 : 1;
-      if (aVal > bVal) return sortOrder.value === 'asc' ? 1 : -1;
-      return 0;
+      const aVal = String(a[column] ?? "").toLowerCase();
+      const bVal = String(b[column] ?? "").toLowerCase();
+      return sortOrder.value === "asc"
+        ? aVal.localeCompare(bVal)
+        : bVal.localeCompare(aVal);
     });
   }
   return result;
 });
 
-const totalPages = computed(() => Math.ceil(filteredData.value.length / itemsPerPage));
+const totalPages = computed(() =>
+  Math.ceil(filteredData.value.length / itemsPerPage)
+);
 const paginatedDetails = computed(() => {
   const start = (currentPage.value - 1) * itemsPerPage;
   return filteredData.value.slice(start, start + itemsPerPage);
 });
 
 function sortData(column: keyof AttendanceDetail) {
-  if (sortColumn.value === column) sortOrder.value = sortOrder.value === 'asc' ? 'desc' : 'asc';
-  else { sortColumn.value = column as string; sortOrder.value = 'asc'; }
+  if (sortColumn.value === column)
+    sortOrder.value = sortOrder.value === "asc" ? "desc" : "asc";
+  else {
+    sortColumn.value = column as string;
+    sortOrder.value = "asc";
+  }
   currentPage.value = 1;
 }
 
-/* Settle attendance (local update — you can call API here) */
+/* Settle Attendance */
 const settleAttendance = async (detail: AttendanceDetail) => {
   const result = await Swal.fire({
-    title: 'Settle Attendance Record?',
-    text: 'Do you want to settle this attendance record?',
-    icon: 'question',
+    title: "Settle Attendance Record?",
+    text: "Do you want to settle this attendance record?",
+    icon: "question",
     showCancelButton: true,
-    confirmButtonText: 'Yes, settle it!',
-    cancelButtonText: 'Cancel',
+    confirmButtonText: "Yes, settle it!",
     didOpen: () => {
-      document.body.classList.remove('swal2-height-auto');
-      document.documentElement.classList.remove('swal2-height-auto');
-    }
+      document.body.classList.remove("swal2-height-auto");
+      document.documentElement.classList.remove("swal2-height-auto");
+    },
   });
 
   if (result.isConfirmed) {
     try {
-      // ✅ Call API to settle
-      await axios.put(`http://localhost:5000/api/attendance/settle/${detail.attendance_id}`);
-
-      // ✅ Update UI instantly
-      detail.attendanceStats = 'Settled';   // 🔥 changed from 'Complete' to 'Settled'
+      await axios.put(
+        `http://localhost:5000/api/attendance/settle/${detail.attendance_id}`
+      );
+      detail.attendanceStats = "Settled";
       detail.canSettle = false;
 
       await Swal.fire({
-        icon: 'success',
-        title: 'Settled!',
-        text: 'Attendance has been updated.',
+        icon: "success",
+        title: "Settled!",
+        text: "Attendance has been updated.",
         didOpen: () => {
-          document.body.classList.remove('swal2-height-auto');
-          document.documentElement.classList.remove('swal2-height-auto');
-        }
+          document.body.classList.remove("swal2-height-auto");
+          document.documentElement.classList.remove("swal2-height-auto");
+        },
       });
     } catch (err) {
       console.error(err);
       await Swal.fire({
-        icon: 'error',
-        title: 'Error',
-        text: 'Failed to settle attendance.',
+        icon: "error",
+        title: "Error",
+        text: "Failed to settle attendance.",
         didOpen: () => {
-          document.body.classList.remove('swal2-height-auto');
-          document.documentElement.classList.remove('swal2-height-auto');
-        }
+          document.body.classList.remove("swal2-height-auto");
+          document.documentElement.classList.remove("swal2-height-auto");
+        },
       });
     }
   }
 };
 
-/* PDF export (keeps your original behavior) */
+/* ✅ Export full table to PDF */
 const exportData = () => {
   const doc = new jsPDF();
   doc.setFontSize(14);
-  doc.text('Event Attendance Records Summary', 14, 20);
+  doc.text("Event Attendance Records Summary", 14, 20);
 
   autoTable(doc, {
     startY: 30,
-    head: [['Event Name', 'Date', 'Total Attendees', 'Total Absences', 'Incomplete', 'Feedbacks', 'Status']],
-    body: [[eventName.value, eventDate.value, totalAttendees.value, totalAbsences.value, incompleteAttendance.value, feedbacks.value, eventStats.value]]
+    head: [
+      [
+        "Event Name",
+        "Date",
+        "Total Attendees",
+        "Total Absences",
+        "Incomplete",
+        "Feedbacks",
+        "Status",
+      ],
+    ],
+    body: [
+      [
+        eventName.value,
+        eventDate.value,
+        totalAttendees.value,
+        totalAbsences.value,
+        incompleteAttendance.value,
+        feedbacks.value,
+        eventStats.value,
+      ],
+    ],
   });
 
   const startY = (doc as any).lastAutoTable?.finalY || 60;
-  doc.text('Attendance Details', 14, startY + 20);
+  doc.text("Attendance Details", 14, startY + 20);
 
   autoTable(doc, {
     startY: startY + 30,
-    head: [['Name', 'Prog, Yr & Sec', 'Time In', 'Mid-Event', 'Time Out', 'Remarks', 'Status']],
-    body: attendanceDetails.value.map(d => [d.studName, d.progYearSec, d.timeIn, d.midEventcheck, d.timeOut, d.remarks, d.attendanceStats]),
-    styles: { fontSize: 9 }
+    head: [
+      [
+        "Name",
+        "Prog, Yr & Sec",
+        "Time In (AM)",
+        "Mid-Event (AM)",
+        "Time Out (AM)",
+        "Time In (PM)",
+        "Mid-Event (PM)",
+        "Time Out (PM)",
+        "AR",
+        "Status",
+      ],
+    ],
+    body: attendanceDetails.value.map((d) => [
+      d.studName,
+      d.progYearSec,
+      d.timeIn,
+      d.midEventcheck,
+      d.timeOut,
+      d.afternoontimeIn,
+      d.afternoonmidEventcheck,
+      d.afternoontimeOut,
+      d.absenceReqStatus,
+      d.attendanceStats,
+    ]),
+    styles: { fontSize: 9 },
   });
 
-  doc.save(`Attendance_${eventName.value || 'Event'}.pdf`);
+  doc.save(`Attendance_${eventName.value || "Event"}.pdf`);
 };
 
-/* color badge helpers (inline styles to avoid dependency on tailwind) */
-function getRemarksStyle(remarks: string | null) {
-  if (!remarks) return { color: '#374151' }; // gray
-  const r = remarks.toLowerCase();
-  if (r.includes('present')) return { backgroundColor: '#dcfce7', color: '#166534', padding: '4px 8px', borderRadius: '8px', fontWeight: 600 };
-  if (r.includes('missed')) return { backgroundColor: '#fee2e2', color: '#991b1b', padding: '4px 8px', borderRadius: '8px', fontWeight: 600 };
-  if (r.includes('incomplete')) return { backgroundColor: '#fff7ed', color: '#92400e', padding: '4px 8px', borderRadius: '8px', fontWeight: 600 };
-  return { backgroundColor: '#f3f4f6', color: '#374151', padding: '4px 8px', borderRadius: '8px' };
-}
-
+/* Styles */
 function getAttendanceStyle(status: string | null) {
-  if (!status) return { color: '#374151' };
+  if (!status) return { color: "#374151" };
   const s = status.toLowerCase();
-  if (s.includes('complete')) return { backgroundColor: '#d1fae5', color: '#065f46', padding: '4px 8px', borderRadius: '8px', fontWeight: 700 };
-  if (s.includes('excused')) return { backgroundColor: '#dbf4ff', color: '#075985', padding: '4px 8px', borderRadius: '8px', fontWeight: 700 };
-  if (s.includes('unsettled')) return { backgroundColor: '#fff7ed', color: '#b45309', padding: '4px 8px', borderRadius: '8px', fontWeight: 700 };
-  if (s.includes('settled')) return { backgroundColor: '#f3e8ff', color: '#6b21a8', padding: '4px 8px', borderRadius: '8px', fontWeight: 700 };
-  return { backgroundColor: '#f3f4f6', color: '#374151', padding: '4px 8px', borderRadius: '8px' };
+  if (s.includes("complete"))
+    return {
+      backgroundColor: "#d1fae5",
+      color: "#065f46",
+      padding: "4px 8px",
+      borderRadius: "8px",
+      fontWeight: 700,
+    };
+  if (s.includes("settled"))
+    return {
+      backgroundColor: "#f3e8ff",
+      color: "#6b21a8",
+      padding: "4px 8px",
+      borderRadius: "8px",
+      fontWeight: 700,
+    };
+  if (s.includes("excused"))
+    return {
+      backgroundColor: "#dbf4ff",
+      color: "#075985",
+      padding: "4px 8px",
+      borderRadius: "8px",
+      fontWeight: 700,
+    };
+  if (s.includes("unsettled"))
+    return {
+      backgroundColor: "#fff7ed",
+      color: "#b45309",
+      padding: "4px 8px",
+      borderRadius: "8px",
+      fontWeight: 700,
+    };
+  return {
+    backgroundColor: "#f3f4f6",
+    color: "#374151",
+    padding: "4px 8px",
+    borderRadius: "8px",
+    fontWeight: 700,
+  };
 }
 
 function getEventStyle(status: string | null) {
   if (!status) return {};
   const s = status.toLowerCase();
-  if (s.includes('upcoming')) return { backgroundColor: '#eff6ff', color: '#1d4ed8', padding: '4px 8px', borderRadius: '8px', fontWeight: 700 };
-  if (s.includes('ongoing')) return { backgroundColor: '#ecfdf5', color: '#15803d', padding: '4px 8px', borderRadius: '8px', fontWeight: 700 };
-  if (s.includes('done') || s.includes('completed')) return { backgroundColor: '#f3f4f6', color: '#4b5563', padding: '4px 8px', borderRadius: '8px', fontWeight: 700 };
+  if (s.includes("upcoming"))
+    return {
+      backgroundColor: "#eff6ff",
+      color: "#1d4ed8",
+      padding: "4px 8px",
+      borderRadius: "8px",
+      fontWeight: 700,
+    };
+  if (s.includes("ongoing"))
+    return {
+      backgroundColor: "#ecfdf5",
+      color: "#15803d",
+      padding: "4px 8px",
+      borderRadius: "8px",
+      fontWeight: 700,
+    };
+  if (s.includes("done"))
+    return {
+      backgroundColor: "#f3f4f6",
+      color: "#4b5563",
+      padding: "4px 8px",
+      borderRadius: "8px",
+      fontWeight: 700,
+    };
   return {};
 }
 </script>
+
 
 <style scoped>
 .toolbar-container::part(backdrop) {
@@ -687,7 +818,7 @@ ion-icon {
 }
 h4{
     font-size: 24px;
-    margin-top: 10px;
+    margin-top: 20px;
     margin-bottom: 0px !important;
     font-weight: 700;
     text-align: center;
@@ -702,7 +833,7 @@ h4{
 .event-table th,
 .event-table td {
   text-align: center;
-  padding: 12px;
+  padding: 10px 0 !important;
   border: 1px solid #ccc;
 }
 
@@ -764,12 +895,14 @@ ion-select.sorter{
 thead {
   background-color:#07055d;
   color: white;
+  font-size: 15px;
 }
 
 thead th {
-  padding: 10px;
-  text-align: left;
+  padding: 0 2px;
+  text-align: center;
   white-space: nowrap;
+  padding: 5px;
 }
 tbody{
   background-color: white;

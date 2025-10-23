@@ -82,7 +82,6 @@ const getVolunteers = async (req, res) => {
 // volunteerController.js
 const cancelVolunteerApplication = async (req, res) => {
   const { id } = req.params;
-  console.log('🟢 DELETE request received with id:', id); // <-- add this
 
   if (!id || id === 'undefined') {
     return res.status(400).json({ success: 0, message: 'Missing or invalid application ID' });
