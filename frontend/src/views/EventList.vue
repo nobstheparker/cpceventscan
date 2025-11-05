@@ -275,12 +275,40 @@
                     </div>
                   </div>
                   <!-- Location Search -->
-                  <div class="form-row">
+                 <div class="form-row" style="position: relative;">
                     <label>Event Location (Leaflet Search)</label>
-                    <ion-input v-model="modalEvent.searchQuery" :value="modalEvent.searchQuery" @input="debouncedSearch"></ion-input>
+                    <ion-input
+                      v-model="modalEvent.searchQuery"
+                      placeholder="Search for location..."
+                      @input="debouncedSearch"
+                    ></ion-input>
+
+                    <!-- Display selected location below -->
+                    <div
+                      v-if="modalEvent.eventLocation"
+                      style="margin-top: 6px; font-size: 14px; color: #333;"
+                    >
+                      📍 Selected: <strong>{{ modalEvent.eventLocation }}</strong>
+                    </div>
+
+                    <!-- Dropdown results -->
                     <ul
                       v-if="locationResults.length"
-                      style="position: absolute; top: 100%; left: 0; right: 0; background: white; max-height: 150px; overflow-y: auto; border: 1px solid #ccc; z-index: 1000; margin: 0; padding: 0; list-style: none;"
+                      style="
+                        position: absolute;
+                        top: 100%;
+                        left: 0;
+                        right: 0;
+                        background: white;
+                        border: 1px solid #ccc;
+                        border-radius: 4px;
+                        max-height: 150px;
+                        overflow-y: auto;
+                        z-index: 1000;
+                        margin: 0;
+                        padding: 0;
+                        list-style: none;
+                      "
                     >
                       <li
                         v-for="(loc, index) in locationResults"
@@ -310,10 +338,52 @@
                       <div v-if="modalEvent.selectionMode === 'byCourse'">
                         <label>Select Course:</label>
                         <select v-model="modalEvent.selectedCourse">
-                          <option value="BSIT">BSIT</option>
-                          <option value="BSED">BSED</option>
-                          <option value="BSHM">BSHM</option>
+                          <option disabled value="">-- Select a Course --</option>
+                          <option v-for="course in courses" :key="course.course_id" :value="course.course_code">
+                            {{ course.course_code }} - {{ course.course_name }}
+                          </option>
                         </select>
+                      </div>
+                    <div v-if="modalEvent.selectionMode === 'manual'">
+                        <label style="font-weight: 600;">Select Students:</label>
+
+                        <!-- Search Input -->
+                        <ion-input
+                          v-model="manualSearch"
+                          placeholder="Search student by name or ID..."
+                          @ionInput="filterStudents"
+                          style="margin: 10px 0;"
+                        ></ion-input>
+
+                        <div
+                          v-if="filteredStudents.length"
+                          style="border: 1px solid #ccc; border-radius: 5px; max-height: 250px; overflow-y: auto; padding: 10px;"
+                        >
+                          <div
+                            v-for="student in filteredStudents"
+                            :key="student.id"
+                            style="display: flex; align-items: center; padding: 4px 0;"
+                          >
+                           <input
+                              type="checkbox"
+                              :id="'student-' + student.id"
+                              :checked="modalEvent.selectedStudents.includes(student.student_id)"
+                              @change="toggleStudentSelection(student)"
+                            />
+                            <label :for="'student-' + student.id" style="margin-left: 8px; cursor: pointer;">
+                              {{ student.student_id }} - {{ student.first_name }} {{ student.last_name }}
+                            </label>
+                          </div>
+                        </div>
+
+                        <div v-else style="color: #888; text-align: center; margin-top: 10px;">
+                          No students found. Click "Reload Student List" to refresh.
+                        </div>
+
+                        <!-- Selected Count -->
+                        <p style="margin-top: 10px; font-size: 14px; color: #333;">
+                          Selected: {{ modalEvent.selectedStudents.length }} student(s)
+                        </p>
                       </div>
                     </div>
                   </div>
@@ -442,7 +512,7 @@ import {
 } from '@ionic/vue';
 import { notifications } from 'ionicons/icons';
 import Swal from 'sweetalert2';
-import { ref, computed, onMounted } from 'vue';
+import { ref, computed, onMounted, watch  } from 'vue';
 import { useRouter } from 'vue-router';
 import axios from 'axios';
 
@@ -475,10 +545,8 @@ interface EventData {
   attendanceControls?: boolean;
   customNotification?: boolean;
   midEventCheck?: boolean;
-  eventProgramBase64?: string; // <-- add this for base64 content
+  eventProgramBase64?: string;
 }
-
-
 
 const modalEvent = ref<EventData>({
   eventID: 0,
@@ -504,11 +572,109 @@ const modalEvent = ref<EventData>({
   attendanceControls: false,
   customNotification: false,
   midEventCheck: false,
-  eventProgramBase64: '', // Initialize empty
+  eventProgramBase64: '',
 });
 
-const selectedOption = ref<'upload' | 'na'>('upload');
+const students = ref<any[]>([]);
+const courses = ref([]);
 
+const filteredStudents = ref<any[]>([]);
+const manualSearch = ref('');
+
+// ✅ Manual student modal control
+const isStudentModalOpen = ref(false);
+
+// ✅ Load all students for manual selection
+const loadAllCourses = async () => {
+  try {
+    const res = await axios.get('http://localhost:5000/api/courses/list');
+    courses.value = res.data.courses || [];
+  } catch (err) {
+    console.error('Error fetching courses:', err);
+  }
+};
+const loadAllStudents = async () => {
+  try {
+    const res = await axios.get('http://localhost:5000/api/students/list');
+    students.value = res.data.students || [];
+    filteredStudents.value = students.value;
+  } catch (err) {
+    console.error('Error fetching students:', err);
+  }
+};
+
+// ✅ Watch selection mode
+watch(
+  () => modalEvent.value.selectionMode,
+  async (newMode) => {
+    if (newMode === 'manual') {
+      await loadAllStudents();
+    } else if (newMode === 'byCourse') {
+      await loadAllCourses();
+    } else {
+      modalEvent.value.selectedStudents = [];
+    }
+  }
+);
+
+// ✅ Search filter for manual mode
+const filterStudents = () => {
+  const search = manualSearch.value.toLowerCase();
+  filteredStudents.value = students.value.filter(
+    s =>
+      s.first_name.toLowerCase().includes(search) ||
+      s.last_name.toLowerCase().includes(search) ||
+      s.student_id.toLowerCase().includes(search)
+  );
+};
+
+// ✅ Checkbox toggle (only store student_id)
+const toggleStudentSelection = (student: any) => {
+  const exists = modalEvent.value.selectedStudents.some(id => id === student.student_id);
+  if (exists) {
+    modalEvent.value.selectedStudents = modalEvent.value.selectedStudents.filter(
+      id => id !== student.student_id
+    );
+  } else {
+    modalEvent.value.selectedStudents.push(student.student_id);
+  }
+};
+
+// ✅ Handle selection mode switch
+const handleSelectionModeChange = async () => {
+  if (modalEvent.value.selectionMode === 'manual') {
+    await openManualSelection();
+  } else {
+    modalEvent.value.selectedStudents = [];
+  }
+};
+
+// ✅ Open and close manual modal
+const openManualSelection = async () => {
+  await loadAllStudents();
+  isStudentModalOpen.value = true;
+};
+const closeManualSelection = () => {
+  isStudentModalOpen.value = false;
+};
+
+// ✅ Confirm manual selection
+const confirmManualSelection = () => {
+  isStudentModalOpen.value = false;
+  Swal.fire({
+    icon: 'success',
+    title: 'Students Selected',
+    text: `${modalEvent.value.selectedStudents.length} student(s) added.`,
+    didOpen: () => {
+      document.body.classList.remove('swal2-height-auto');
+      document.documentElement.classList.remove('swal2-height-auto');
+    },
+  });
+};
+
+// === Your existing logic below ===
+
+const selectedOption = ref<'upload' | 'na'>('upload');
 const startDateTime = ref('');
 const endDateTime = ref('');
 const formattedStartDateTime = ref('');
@@ -528,20 +694,20 @@ const formatDateTime = (dateTime: string) => {
 
 const updateStartFormatted = () => {
   formattedStartDateTime.value = formatDateTime(startDateTime.value);
-  modalEvent.value.startDateTime = startDateTime.value; // ✅ Save what user picked
+  modalEvent.value.startDateTime = startDateTime.value;
 };
 
 const updateEndFormatted = () => {
   formattedEndDateTime.value = formatDateTime(endDateTime.value);
-  modalEvent.value.endDateTime = endDateTime.value; // ✅ Save what user picked
+  modalEvent.value.endDateTime = endDateTime.value;
 };
+
 const handleFileChange = async (event: Event) => {
   const target = event.target as HTMLInputElement;
   const file = target.files?.[0];
   if (file) {
     modalEvent.value.fileName = file.name;
     selectedOption.value = 'upload';
-
     try {
       modalEvent.value.eventProgramBase64 = await getBase64(file) as string;
     } catch (error) {
@@ -565,18 +731,18 @@ function simpleDebounce(func: () => void, wait = 300) {
 }
 
 const fetchLocationResults = async () => {
-  if (searchQuery.value.length < 3) {
+  const query = modalEvent.value.searchQuery?.trim();
+  if (!query || query.length < 3) {
     locationResults.value = [];
     return;
   }
   try {
     const response = await fetch(
-      `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(searchQuery.value)}&addressdetails=1&limit=5`
+      `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&addressdetails=1&limit=5`
     );
-    const results = await response.json();
-    locationResults.value = results;
+    locationResults.value = await response.json();
   } catch (error) {
-    console.error('Location search error:', error);
+    console.error('Leaflet search error:', error);
     locationResults.value = [];
   }
 };
@@ -584,11 +750,11 @@ const fetchLocationResults = async () => {
 const debouncedSearch = simpleDebounce(fetchLocationResults, 300);
 
 function selectLocation(loc: { display_name: string; lat: string; lon: string }) {
-  searchQuery.value = loc.display_name;
-  locationResults.value = [];
+  modalEvent.value.searchQuery = loc.display_name;
+  modalEvent.value.eventLocation = loc.display_name;
   selectedLocationLat.value = loc.lat;
   selectedLocationLon.value = loc.lon;
-  event_location.value = loc.display_name;
+  locationResults.value = [];
 }
 
 const triggerFileInput = () => {
@@ -600,11 +766,8 @@ function getBase64(file: File) {
     const reader = new FileReader();
     reader.readAsDataURL(file);
     reader.onload = () => {
-      if (typeof reader.result === 'string') {
-        resolve(reader.result);
-      } else {
-        reject('FileReader result not string');
-      }
+      if (typeof reader.result === 'string') resolve(reader.result);
+      else reject('FileReader result not string');
     };
     reader.onerror = error => reject(error);
   });
@@ -612,59 +775,57 @@ function getBase64(file: File) {
 
 const openEditModal = (event: EventData) => {
   const fullEvent = events.value.find((e) => e.eventID === event.eventID);
-
   if (fullEvent) {
     modalEvent.value = {
       ...fullEvent,
-      volunteerApplication: fullEvent.volunteerApplication === 1 || fullEvent.volunteerApplication === true,
-      absenceRequest: fullEvent.absenceRequest === 1 || fullEvent.absenceRequest === true,
-      attendanceControls: fullEvent.attendanceControls === 1 || fullEvent.attendanceControls === true,
-      customNotification: fullEvent.customNotification === 1 || fullEvent.customNotification === true,
-      midEventCheck: fullEvent.midEventCheck === 1 || fullEvent.midEventCheck === true,
-      eventProgramBase64: '', // reset file base64 on open
+      searchQuery: fullEvent.eventLocation, // ✅ initialize the search field
+      volunteerApplication: !!fullEvent.volunteerApplication,
+      absenceRequest: !!fullEvent.absenceRequest,
+      attendanceControls: !!fullEvent.attendanceControls,
+      customNotification: !!fullEvent.customNotification,
+      midEventCheck: !!fullEvent.midEventCheck,
+      eventProgramBase64: '',
     };
-
     startDateTime.value = fullEvent.startDateTime ?? '';
     endDateTime.value = fullEvent.endDateTime ?? '';
     formattedStartDateTime.value = formatDateTime(fullEvent.startDateTime ?? '');
     formattedEndDateTime.value = formatDateTime(fullEvent.endDateTime ?? '');
-
     selectedOption.value = !fullEvent.fileName || fullEvent.fileName === 'N/A' ? 'na' : 'upload';
-
+    selectedLocationLat.value = fullEvent.latitude ?? null;
+    selectedLocationLon.value = fullEvent.longitude ?? null;
     isModalOpen.value = true;
   } else {
     Swal.fire('Error', 'Event details not found.', 'error');
   }
 };
-const closeModal = () => {
-  isModalOpen.value = false;
-};
+
+const closeModal = () => (isModalOpen.value = false);
+
 const updateEvent = async () => {
   try {
-    await axios.put(
-      `http://localhost:5000/api/events/update/${modalEvent.value.eventID}`,
-      {
-        event_name: modalEvent.value.eventName,
-        start_date_time: modalEvent.value.startDateTime,
-        end_date_time: modalEvent.value.endDateTime,
-        event_location: modalEvent.value.searchQuery,
-        event_description: modalEvent.value.eventDesc,
-        selection_mode: modalEvent.value.selectionMode,
-        selected_course: modalEvent.value.selectedCourse,
-        selected_students: JSON.stringify(modalEvent.value.selectedStudents),
-        event_program_attachment: modalEvent.value.fileName,
-        event_program_file_base64: modalEvent.value.eventProgramBase64,  // <-- send base64 here
-        event_note: modalEvent.value.eventNote,
-        event_reminder: modalEvent.value.eventReminder,
-        call_to_action_buttons_instruction: modalEvent.value.ctabtn,
-        qr_code_option: modalEvent.value.qrCode,
-        volunteer_application: modalEvent.value.volunteerApplication ? 1 : 0,
-        absence_request: modalEvent.value.absenceRequest ? 1 : 0,
-        attendance_controls: modalEvent.value.attendanceControls ? 1 : 0,
-        custom_notification: modalEvent.value.customNotification ? 1 : 0,
-        mid_event_check: modalEvent.value.midEventCheck ? 1 : 0,
-      }
-    );
+    await axios.put(`http://localhost:5000/api/events/update/${modalEvent.value.eventID}`, {
+      event_name: modalEvent.value.eventName,
+      start_date_time: modalEvent.value.startDateTime,
+      end_date_time: modalEvent.value.endDateTime,
+      event_location: modalEvent.value.eventLocation, 
+      latitude: selectedLocationLat.value,
+      longitude: selectedLocationLon.value,
+      event_description: modalEvent.value.eventDesc,
+      selection_mode: modalEvent.value.selectionMode,
+      selected_course: modalEvent.value.selectedCourse,
+      selected_students: JSON.stringify(modalEvent.value.selectedStudents), 
+      event_program_attachment: modalEvent.value.fileName,
+      event_program_file_base64: modalEvent.value.eventProgramBase64,
+      event_note: modalEvent.value.eventNote,
+      event_reminder: modalEvent.value.eventReminder,
+      call_to_action_buttons_instruction: modalEvent.value.ctabtn,
+      qr_code_option: modalEvent.value.qrCode,
+      volunteer_application: modalEvent.value.volunteerApplication ? 1 : 0,
+      absence_request: modalEvent.value.absenceRequest ? 1 : 0,
+      attendance_controls: modalEvent.value.attendanceControls ? 1 : 0,
+      custom_notification: modalEvent.value.customNotification ? 1 : 0,
+      mid_event_check: modalEvent.value.midEventCheck ? 1 : 0,
+    });
 
     Swal.fire({
       icon: 'success',
@@ -675,7 +836,6 @@ const updateEvent = async () => {
         document.documentElement.classList.remove('swal2-height-auto');
       },
     });
-
     fetchEvents();
     closeModal();
   } catch (error) {
@@ -683,29 +843,25 @@ const updateEvent = async () => {
     Swal.fire('Error', 'Failed to update the event.', 'error');
   }
 };
+
 const downloadQR = async (qrCodeUrl: string, eventID: number) => {
   try {
     const response = await fetch(qrCodeUrl);
     if (!response.ok) throw new Error('Network response was not ok');
-
     const blob = await response.blob();
     const url = URL.createObjectURL(blob);
-
     const link = document.createElement('a');
     link.href = url;
     link.download = `event-${eventID}-QR.png`;
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
-
     URL.revokeObjectURL(url);
   } catch (error) {
     console.error('QR download failed:', error);
     Swal.fire('Error', 'Failed to download QR code.', 'error');
   }
 };
-
-
 
 const confirmLogout = async () => {
   const result = await Swal.fire({
@@ -723,7 +879,7 @@ const confirmLogout = async () => {
   if (result.isConfirmed) {
     try {
       await axios.post('http://localhost:5000/api/users/admin-logout', {}, { withCredentials: true });
-      router.push('/adminLogIn'); // redirect to login page
+      router.push('/adminLogIn');
     } catch (err) {
       console.error(err);
       Swal.fire({
@@ -733,7 +889,7 @@ const confirmLogout = async () => {
         didOpen: () => {
           document.body.classList.remove('swal2-height-auto');
           document.documentElement.classList.remove('swal2-height-auto');
-        }
+        },
       });
     }
   }
@@ -742,15 +898,14 @@ const confirmLogout = async () => {
 const showStudentMenu = ref(false);
 const showAcadMenu = ref(false);
 const showEventMenu = ref(false);
-
 const toggleStudentMenu = () => (showStudentMenu.value = !showStudentMenu.value);
 const toggleAcadMenu = () => (showAcadMenu.value = !showAcadMenu.value);
 const toggleEventMenu = () => (showEventMenu.value = !showEventMenu.value);
 
 const totalEvents = computed(() => events.value.length);
-const upcomingEvents = computed(() => events.value.filter((event) => event.eventStats === 'Upcoming').length);
-const ongoingEvents = computed(() => events.value.filter((event) => event.eventStats === 'Ongoing').length);
-const completedEvents = computed(() => events.value.filter((event) => event.eventStats === 'Completed').length);
+const upcomingEvents = computed(() => events.value.filter(e => e.eventStats === 'Upcoming').length);
+const ongoingEvents = computed(() => events.value.filter(e => e.eventStats === 'Ongoing').length);
+const completedEvents = computed(() => events.value.filter(e => e.eventStats === 'Completed').length);
 
 const sortColumn = ref('');
 const sortOrder = ref<'asc' | 'desc'>('asc');
@@ -784,6 +939,8 @@ const fetchEvents = async () => {
       attendanceControls: event.attendance_controls === 1,
       customNotification: event.custom_notification === 1,
       midEventCheck: event.mid_event_check === 1,
+      latitude: event.latitude,              // ✅ add this
+      longitude: event.longitude,            // ✅ add this
       qrCodeImage: `http://localhost:5000/uploads/qr/event-${event.id}.png`,
       eventProgramBase64: '',
     }));
@@ -792,12 +949,10 @@ const fetchEvents = async () => {
   }
 };
 
-
 const determineEventStatus = (startDate: string, endDate: string) => {
   const now = new Date();
   const start = new Date(startDate);
   const end = new Date(endDate);
-
   if (now < start) return 'Upcoming';
   if (now >= start && now <= end) return 'Ongoing';
   return 'Completed';
@@ -805,16 +960,12 @@ const determineEventStatus = (startDate: string, endDate: string) => {
 
 const filteredData = computed(() => {
   let result = [...events.value];
-
   if (searchQuery.value) {
     const query = searchQuery.value.toLowerCase();
     result = result.filter((event) =>
-      Object.values(event).some((value) =>
-        String(value).toLowerCase().includes(query)
-      )
+      Object.values(event).some((value) => String(value).toLowerCase().includes(query))
     );
   }
-
   if (sortColumn.value) {
     const key = sortColumn.value as keyof EventData;
     result.sort((a, b) => {
@@ -827,7 +978,6 @@ const filteredData = computed(() => {
       return 0;
     });
   }
-
   return result;
 });
 
@@ -891,7 +1041,6 @@ const deleteEvent = async (eventId: number) => {
 };
 
 const admin = ref<any>(null);
-
 onMounted(async () => {
   try {
     const res = await axios.get('http://localhost:5000/api/check-admin-session', {
@@ -908,6 +1057,7 @@ onMounted(async () => {
     router.replace('/adminLogIn');
   }
   fetchEvents();
+  loadAllCourses();
 });
 </script>
 
@@ -1432,6 +1582,9 @@ ion-button.ion-margin-top::part(native){
   background: #05044D;
 }
 
+.form-row {
+  position: relative;
+}
 ion-select{
       width: 123vh;
     font-size: 16px;
@@ -1514,6 +1667,7 @@ ion-select{
     margin-left: 8px;
     cursor: pointer;
     border-radius: 3px;
+    color: white !important;
     background: #2c2c7a;
 }
 

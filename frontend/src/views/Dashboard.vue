@@ -332,7 +332,7 @@ const logIn = async () => {
     display: inline-block;
     margin-left: 5px;
     overflow: hidden;
-    width: 32.9%;
+    width: 32.5%;
     color: white;
     text-align: center;
     box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);

@@ -182,10 +182,10 @@
                     <div v-if="selectionMode === 'byCourse'" class="dropdown-section">
                       <label>Select Course:</label>
                       <select v-model="selectedCourse">
-                        <option disabled value="Select A Course">Select a course</option>
-                        <option value="BSIT">BSIT</option>
-                        <option value="BSED">BSED</option>
-                        <option value="BSHM">BSHM</option>
+                        <option disabled value="">Select a course</option>
+                        <option v-for="course in courses" :key="course.course_id" :value="course.course_code">
+                          {{ course.course_code }} - {{ course.course_name }}
+                        </option>
                       </select>
                     </div>
 
@@ -212,18 +212,27 @@
                             </label>
                           </div>
                           <div class="right">
-                            <input type="text" placeholder="Search..." v-model="searchQueryStudents" />
+                            <input
+                              type="text"
+                              placeholder="Search..."
+                              v-model="searchQueryStudents"
+                            />
                           </div>
                         </div>
 
                         <div class="student-list">
-                          <label v-for="student in filteredStudents" :key="student.id">
-                            <input type="checkbox" :value="student.id" v-model="selectedStudents" />
-                            {{ student.name }}
+                          <label v-for="student in filteredStudents" :key="student.student_id">
+                            <input
+                              type="checkbox"
+                              :value="student.student_id"
+                              v-model="selectedStudents"
+                            />
+                            {{ student.student_id }} - {{ student.first_name }} {{ student.last_name }}
                           </label>
                         </div>
                       </div>
                     </div>
+
                   </div>
                 </div>
 
@@ -302,7 +311,6 @@
                   <select v-model="qrCode" class="native-select" placeholder="Select QR Option" style="color: #343333;" required>
                     <option disabled value="">Select QR Option</option>
                     <option value="automatic">Automatic Generation</option>
-                    <option value="no_qr">No QR</option>
                   </select>
                 </div>
 
@@ -411,42 +419,62 @@ const customNotification = ref(false);
 const midEventCheck = ref(false);
 const selectionMode = ref('');
 const selectedCourse = ref('');
-const searchQueryStudents = ref('');
-const selectedStudents = ref<number[]>([]);
-const showStudentDropdown = ref(false);
-const selectAll = ref(false);
 const qrCode = ref('');
 
 // --- Student List ---
-const students = [
-  { id: 1, name: 'Anna Cruz' },
-  { id: 2, name: 'Brian Santos' },
-  { id: 3, name: 'Carla Reyes' },
-  { id: 4, name: 'David Flores' },
-  { id: 5, name: 'Ella Garcia' }
-];
+// --- Student List (Fetch from backend) ---
+const students = ref<{ id: number; student_id: string; first_name: string; last_name: string }[]>([]);
+const courses = ref<{ course_id: number; course_code: string; course_name: string }[]>([]);
+const filteredStudents = ref<{ id: number; student_id: string; first_name: string; last_name: string }[]>([]);
+const searchQueryStudents = ref('');
+const selectedStudents = ref<string[]>([]);
+const showStudentDropdown = ref(false);
+const selectAll = ref(false);
 
-const filteredStudents = computed(() =>
-  students.filter((s) => s.name.toLowerCase().includes(searchQueryStudents.value.toLowerCase()))
-);
+const loadCourses = async () => {
+  try {
+    const res = await axios.get('http://localhost:5000/api/courses/list');
+    courses.value = res.data.courses || [];
+  } catch (err) {
+    console.error('Failed to fetch courses:', err);
+  }
+};
 
+const loadStudents = async () => {
+  try {
+    const res = await axios.get('http://localhost:5000/api/students/list'); // 👈 Update endpoint if needed
+    students.value = res.data.students || [];
+    filteredStudents.value = students.value;
+  } catch (err) {
+    console.error('Failed to fetch students:', err);
+  }
+};
+
+// Search filter
+watch(searchQueryStudents, (query) => {
+  const q = query.toLowerCase();
+  filteredStudents.value = students.value.filter(
+    s =>
+      s.first_name.toLowerCase().includes(q) ||
+      s.last_name.toLowerCase().includes(q) ||
+      s.student_id.toLowerCase().includes(q)
+  );
+});
+
+// Select all checkbox
 const toggleAllStudents = () => {
   if (selectAll.value) {
-    selectedStudents.value = filteredStudents.value.map((s) => s.id);
+    selectedStudents.value = filteredStudents.value.map(s => s.student_id);
   } else {
     selectedStudents.value = [];
   }
 };
 
-watch(filteredStudents, () => {
-  if (!selectAll.value) return;
-  selectedStudents.value = filteredStudents.value.map((s) => s.id);
-});
-
+// Compute display text for selected students
 const selectedStudentNames = computed(() => {
-  const selected = students.filter((s) => selectedStudents.value.includes(s.id));
+  const selected = students.value.filter(s => selectedStudents.value.includes(s.student_id));
   if (selected.length === 0) return '';
-  const names = selected.map((s) => s.name);
+  const names = selected.map(s => `${s.first_name} ${s.last_name}`);
   return names.length > 2 ? `${names.slice(0, 2).join(', ')} +${names.length - 2} more` : names.join(', ');
 });
 
@@ -577,7 +605,9 @@ const handleRegister = async () => {
       end_date_time: endDateTime.value,
       selection_mode: selectionMode.value,
       selected_course: selectedCourse.value || null,
-      selected_students: selectedStudents.value.length > 0 ? selectedStudents.value : null,
+      selected_students: selectedStudents.value.length > 0
+          ? JSON.stringify(selectedStudents.value.map((id) => `student_id = ${id}`))
+          : null,
       event_program_attachment_base64: eventDataFileBase64.value,
       event_note: eventNote.value || null,
       event_reminder: eventReminder.value || null,
@@ -634,6 +664,8 @@ onMounted(async () => {
 
     if (res.data.loggedIn && res.data.admin) {
       admin.value = res.data.admin;
+      await loadStudents(); 
+      await loadCourses();
     } else {
       router.replace('/adminLogIn'); // redirect if not logged in
     }
@@ -1058,6 +1090,7 @@ ion-select{
     cursor: pointer;
     border-radius: 3px;
     background: #2c2c7a;
+    color: #fff;
 }
 
 .dropdown-box {

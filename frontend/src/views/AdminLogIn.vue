@@ -13,8 +13,6 @@
     <ion-content class="ad-background">
       <div class="container">
         <div class="form">
-            <h1 class="adminLogIn-title">LOG IN</h1>
-
             <div class="ad-user-icon">
             <img src="../../public/img/user-icon.png" alt="user-icon">
             </div>

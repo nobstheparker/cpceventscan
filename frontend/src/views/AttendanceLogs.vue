@@ -65,7 +65,8 @@
 
         <!-- Main Content -->
         <div class="main-content" style="flex:1; padding-left:16px;">
-          <h4>Attendance Log</h4>
+          <h4 v-if="studentName">{{ studentName }} Attendance Log</h4>
+          <h4 v-else>Attendance Log</h4>
 
           <ion-row class="ion-align-items-center ion-justify-content-between" style="margin-bottom: 10px;">
             <ion-col size="7"></ion-col>
@@ -180,27 +181,32 @@ const attendanceDetails = ref<AttendanceDetail[]>([]);
 const searchQuery = ref('');
 const sortColumn = ref('event_name');
 const sortOrder = ref<'asc'|'desc'>('asc');
+const studentName = ref<string>('');
 const currentPage = ref(1);
 const itemsPerPage = 10;
-
 const fetchAttendanceDetails = async () => {
-  if(!studentId) return;
+  if (!studentId) return;
   const res = await axios.get(`http://localhost:5000/api/students/attendance-logs/${studentId}`);
   const logs = res.data.attendanceLogs ?? [];
-  attendanceDetails.value = logs.map((d:any)=>({
-    attendance_id:d.attendance_id,
-    event_name:d.event_name,
-    time_in_formatted:d.time_in_formatted,
-    trivia_time_in_formatted:d.trivia_time_in_formatted,
-    time_out_formatted:d.time_out_formatted,
-    afternoon_time_in_formatted:d.afternoon_time_in_formatted,
-    afternoon_trivia_time_in_formatted:d.afternoon_trivia_time_in_formatted,
-    afternoon_time_out_formatted:d.afternoon_time_out_formatted,
-    remarks:d.remarks,
-    request_status:d.request_status,
-    attendance_status:d.attendance_status
+
+  if (logs.length > 0) {
+    studentName.value = `${logs[0].first_name} ${logs[0].last_name}`;
+  }
+
+  attendanceDetails.value = logs.map((d: any) => ({
+    attendance_id: d.attendance_id,
+    event_name: d.event_name,
+    time_in_formatted: d.time_in_formatted,
+    trivia_time_in_formatted: d.trivia_time_in_formatted,
+    time_out_formatted: d.time_out_formatted,
+    afternoon_time_in_formatted: d.afternoon_time_in_formatted,
+    afternoon_trivia_time_in_formatted: d.afternoon_trivia_time_in_formatted,
+    afternoon_time_out_formatted: d.afternoon_time_out_formatted,
+    remarks: d.remarks,
+    request_status: d.request_status,
+    attendance_status: d.attendance_status,
   }));
-}
+};
 
 const admin = ref<any>(null);
 onMounted(async () => {

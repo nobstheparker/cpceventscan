@@ -15,7 +15,6 @@
       :keyboard-attach="false"
       keyboard-resize="none">
       <div id="container">
-        <h1 class="login-title">LOG IN</h1>
         <form @submit.prevent="login">
           <div class="user-icon">
             <img src="../../public/img/user-icon.png" alt="User Icon" />
@@ -72,7 +71,7 @@ const router = useRouter();
 axios.defaults.withCredentials = true;
 
 const login = async () => {
-  console.log('Login clicked:', { student_id: student_id.value, password: password.value });
+  console.log('Login clicked:', { studentid: student_id.value, password: password.value });
 
   if (!student_id.value || !password.value) {
     return Swal.fire('Error', 'Please fill out both fields', 'error');
