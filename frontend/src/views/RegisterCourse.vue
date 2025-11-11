@@ -171,7 +171,15 @@ const toggleEventMenu = () => showEventMenu.value = !showEventMenu.value;
 
 const handleRegister = async () => {
   if (!CourseCode.value || !CourseName.value) {
-    Swal.fire('Missing Fields', 'Please fill in all fields.', 'warning');
+    Swal.fire({
+      icon: 'error',
+      title: 'Error',
+      text: 'Please complete all fields.',
+      didOpen: () => {
+        document.body.classList.remove('swal2-height-auto');
+        document.documentElement.classList.remove('swal2-height-auto');
+      }
+    });
     return;
   }
 

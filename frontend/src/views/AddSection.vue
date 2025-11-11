@@ -75,26 +75,6 @@
 
               <ion-card-content>
                 <div class="form-row">
-                  <label>Course</label>
-                  <select v-model="selectedCourseId" required>
-                    <option disabled value="">Select Course</option>
-                    <option v-for="course in courses" :key="course.course_id" :value="course.course_id">
-                      {{ course.course_code }}
-                    </option>
-                  </select>
-                </div>
-
-                <div class="form-row">
-                  <label>Year Level</label>
-                  <select v-model="selectedYearId" required>
-                    <option disabled value="">Select Year Level</option>
-                    <option v-for="year in yearLevels" :key="year.YearID" :value="year.YearID">
-                      {{ year.YearLvl }}
-                    </option>
-                  </select>
-                </div>
-
-                <div class="form-row">
                   <label>Section</label>
                   <ion-input v-model="sec" required></ion-input>
                 </div>
@@ -156,34 +136,22 @@ const selectedCourseId = ref('');
 const selectedYearId = ref('');
 const sec = ref('');
 
-const fetchCourses = async () => {
-  try {
-    const res = await axios.get('http://localhost:5000/api/courses/list');
-    courses.value = res.data.courses;
-  } catch (err) {
-    console.error('Failed to fetch courses:', err);
-  }
-};
-
-const fetchYearLevels = async () => {
-  try {
-    const res = await axios.get('http://localhost:5000/api/year-level/list');
-    yearLevels.value = res.data.yearLevels;
-  } catch (err) {
-    console.error('Failed to fetch year levels:', err);
-  }
-};
-
 const handleRegister = async () => {
-  if (!selectedCourseId.value || !selectedYearId.value || !sec.value) {
-    Swal.fire('Error', 'Please complete all fields.', 'error');
+  if (!sec.value) {
+    Swal.fire({
+      icon: 'error',
+      title: 'Error',
+      text: 'Please complete all fields.',
+      didOpen: () => {
+        document.body.classList.remove('swal2-height-auto');
+        document.documentElement.classList.remove('swal2-height-auto');
+      }
+    });
     return;
   }
 
   try {
     await axios.post('http://localhost:5000/api/sections/create', {
-      courseId: selectedCourseId.value,
-      yearId: selectedYearId.value,
       sectionName: sec.value
     });
 
@@ -197,8 +165,6 @@ const handleRegister = async () => {
       }
     });
 
-    selectedCourseId.value = '';
-    selectedYearId.value = '';
     sec.value = '';
   } catch (err) {
     console.error('Failed to add section:', err);
@@ -264,8 +230,7 @@ onMounted(async () => {
     console.error('Session check failed:', err);
     router.replace('/adminLogIn');
   }
-  fetchCourses();
-  fetchYearLevels();
+
 });
 </script>
 

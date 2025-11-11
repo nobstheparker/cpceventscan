@@ -81,9 +81,6 @@
               <table style="width: 100%; border-collapse: collapse; font-size: 14px;">
                 <thead>
                   <tr>
-                    <th @click="sortData('CourseCode')" style="cursor: pointer;">
-                      Course Code <span v-if="sortColumn === 'CourseCode'">{{ sortOrder === 'asc' ? '▲' : '▼' }}</span>
-                    </th>
                     <th @click="sortData('YearLvl')" style="cursor: pointer;">
                       Year Level <span v-if="sortColumn === 'YearLvl'">{{ sortOrder === 'asc' ? '▲' : '▼' }}</span>
                     </th>
@@ -92,7 +89,6 @@
                 </thead>
                 <tbody>
                   <tr v-for="item in paginatedYears" :key="item.YearID">
-                    <td>{{ item.CourseCode }}</td>
                     <td>{{ item.YearLvl }}</td>
                     <td class="act-btn" style="display: flex;">
                       <ion-button size="small" fill="solid" style="--background: #F1C204; --color: black;" @click="openEditModal(item)">Update</ion-button>
@@ -126,19 +122,6 @@
                 <button type="button" class="btn-close" @click="closeModal" aria-label="Close"></button>
               </div>
               <div class="modal-body">
-                <ion-item>
-                  <ion-label position="floating">Course Code</ion-label>
-                  <select v-model="selectedCourseId" required>
-                    <option disabled value="">Select Course</option>
-                    <option
-                      v-for="course in courses"
-                      :key="course.course_id"
-                      :value="course.course_id"
-                    >
-                      {{ course.course_code }}
-                    </option>
-                  </select>
-                </ion-item>
                 <ion-item>
                   <ion-label position="floating">Year Level</ion-label>
                   <ion-input v-model="newYearLvl" />
@@ -215,7 +198,6 @@ const fetchYearLevels = async () => {
   try {
     const res = await axios.get('http://localhost:5000/api/year-level/list');
     year.value = res.data.yearLevels;
-    courses.value = [...new Set(res.data.yearLevels.map(item => item.CourseCode).filter(Boolean))];
   } catch (error) {
     console.error(error);
   }
@@ -226,7 +208,6 @@ fetchYearLevels();
 const fetchCourses = async () => {
   try {
     const res = await axios.get('http://localhost:5000/api/courses/list');
-    courses.value = res.data.courses;
   } catch (error) {
     console.error('Failed to fetch courses:', error);
     Swal.fire('Error', 'Failed to load courses.', 'error');
@@ -246,7 +227,6 @@ const toggleEventMenu = () => (showEventMenu.value = !showEventMenu.value);
 const openEditModal = (item: YearLevel) => {
   selectedYear.value = { ...item };
   newYearLvl.value = item.YearLvl;
-  selectedCourseId.value = item.CourseID;  // ✅ Use CourseID here from API result
   isModalOpen.value = true;
 };
 
@@ -254,7 +234,6 @@ const updateYearLevel = async () => {
   if (!selectedYear.value) return;
   try {
     await axios.put(`http://localhost:5000/api/year-level/update/${selectedYear.value.YearID}`, {
-      courseId: selectedCourseId.value,  
       yearLevel: newYearLvl.value  
     });
 

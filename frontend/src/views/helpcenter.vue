@@ -55,8 +55,7 @@
           <ion-card-content>
             <ul>
               <li>Visit the SAO or SSG Office during school hours.</li>
-              <li>Email us at: support@yourdomain.edu</li>
-              <li>Call us at: (XXX) XXX-XXXX for urgent matters.</li>
+              <li>Email us at: cpcevents135@gmail.com</li>
             </ul>
           </ion-card-content>
         </ion-card>

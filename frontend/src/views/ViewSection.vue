@@ -81,14 +81,6 @@
               <table style="width: 100%; border-collapse: collapse; font-size: 14px;">
                 <thead>
                   <tr>
-                    <th style="cursor:pointer;" @click="sortData('CourseCode')">
-                      Course Code
-                      <span v-if="sortColumn === 'CourseCode'">{{ sortOrder === 'asc' ? '▲' : '▼' }}</span>
-                    </th>
-                    <th style="cursor:pointer;" @click="sortData('YearLvl')">
-                      Year Level
-                      <span v-if="sortColumn === 'YearLvl'">{{ sortOrder === 'asc' ? '▲' : '▼' }}</span>
-                    </th>
                     <th style="cursor:pointer;" @click="sortData('sec')">
                       Section
                       <span v-if="sortColumn === 'sec'">{{ sortOrder === 'asc' ? '▲' : '▼' }}</span>
@@ -98,8 +90,6 @@
                 </thead>
                 <tbody>
                   <tr v-for="sec in paginatedSection" :key="sec.sectionID">
-                    <td>{{ sec.CourseCode }}</td>
-                    <td>{{ sec.YearLvl }}</td>
                     <td>{{ sec.sec }}</td>
                     <td class="action-btn">
                       <ion-button @click="openModal(sec)" style="--background: #F1C204; --color: black;">Update</ion-button>
@@ -148,24 +138,6 @@
                 <button type="button" class="btn-close" @click="closeModal" aria-label="Close"></button>
               </div>
               <div class="modal-body">
-                <ion-item>
-                  <ion-label position="floating">Course Code</ion-label>
-                  <select v-model="modalData.course_code" required style="width:100%; padding:8px;">
-                    <option disabled value="">Select Course</option>
-                    <option v-for="course in courses" :key="course.course_id" :value="String(course.course_id)">
-                      {{ course.course_code }}
-                    </option>
-                  </select>
-                </ion-item> 
-                <ion-item>
-                  <ion-label position="floating">Year Level</ion-label>
-                  <select v-model="modalData.year_level" required style="width:100%; padding:8px;">
-                    <option disabled value="">Select Year Level</option>
-                    <option v-for="year in yearLevels" :key="year.YearID" :value="String(year.YearID)">
-                      {{ year.YearLvl }}
-                    </option>
-                  </select>
-                </ion-item>
                 <ion-item>
                   <ion-label position="floating">Section Name</ion-label>
                   <ion-input
@@ -235,8 +207,6 @@ const section = ref<SectionData[]>([]);
 const openModal = (sec: SectionData) => {
   modalData.value = {
     section_id: sec.sectionID,
-    course_code: sec.CourseID,
-    year_level: sec.YearID,
     section_name: sec.sec,
   };
   isModalOpen.value = true;
@@ -251,7 +221,7 @@ const closeModal = () => {
 };
 
 const saveSectionUpdate = async () => {
-  if (!modalData.value.course_code || !modalData.value.year_level || !modalData.value.section_name) {
+  if ( !modalData.value.section_name) {
     Swal.fire('Error', 'Please complete all fields.', 'error');
     return;
   }
@@ -259,8 +229,6 @@ const saveSectionUpdate = async () => {
   isSaving.value = true;
   try {
     await axios.put(`http://localhost:5000/api/sections/update/${modalData.value.section_id}`, {
-      courseId: Number(modalData.value.course_code),
-      yearId: Number(modalData.value.year_level),
       sectionName: modalData.value.section_name
     });
     Swal.fire({
