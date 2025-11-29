@@ -1,4 +1,9 @@
+const moment = require('moment-timezone');
 const db = require('../config/db');
+
+function getPHTime() {
+  return moment().tz('Asia/Manila').format('YYYY-MM-DD HH:mm:ss');
+}
 
 // Create attendance record
 function createAttendance(student_id, event_id) {
@@ -10,53 +15,57 @@ function createAttendance(student_id, event_id) {
 
 // Update time in
 function updateTimeIn(attendance_id) {
+  const phTime = getPHTime();
   return db.execute(
-    'UPDATE event_attendance SET time_in = NOW() WHERE attendance_id = ?',
-    [attendance_id]
+    'UPDATE event_attendance SET time_in = ? WHERE attendance_id = ?',
+    [phTime, attendance_id]
   );
 }
 
 // Update trivia time in
 function updateTriviaTimeIn(attendance_id) {
+  const phTime = getPHTime();
   return db.execute(
-    'UPDATE event_attendance SET trivia_time_in = NOW() WHERE attendance_id = ?',
-    [attendance_id]
+    'UPDATE event_attendance SET trivia_time_in = ? WHERE attendance_id = ?',
+    [phTime, attendance_id]
   );
 }
 
 // Update time out
 function updateTimeOut(attendance_id) {
+  const phTime = getPHTime();
   return db.execute(
-    'UPDATE event_attendance SET time_out = NOW() WHERE attendance_id = ?',
-    [attendance_id]
+    'UPDATE event_attendance SET time_out = ? WHERE attendance_id = ?',
+    [phTime, attendance_id]
   );
 }
 
 // Update afternoon time in
 function updateAfternoonTimeIn(attendance_id) {
+  const phTime = getPHTime();
   return db.execute(
-    'UPDATE event_attendance SET afternoon_time_in = NOW() WHERE attendance_id = ?',
-    [attendance_id]
+    'UPDATE event_attendance SET afternoon_time_in = ? WHERE attendance_id = ?',
+    [phTime, attendance_id]
   );
 }
 
 // Update afternoon trivia time in
 function updateAfternoonTriviaTimeIn(attendance_id) {
+  const phTime = getPHTime();
   return db.execute(
-    'UPDATE event_attendance SET afternoon_trivia_time_in = NOW() WHERE attendance_id = ?',
-    [attendance_id]
+    'UPDATE event_attendance SET afternoon_trivia_time_in = ? WHERE attendance_id = ?',
+    [phTime, attendance_id]
   );
 }
 
 // Update afternoon time out
 function updateAfternoonTimeOut(attendance_id) {
+  const phTime = getPHTime();
   return db.execute(
-    'UPDATE event_attendance SET afternoon_time_out = NOW() WHERE attendance_id = ?',
-    [attendance_id]
+    'UPDATE event_attendance SET afternoon_time_out = ? WHERE attendance_id = ?',
+    [phTime, attendance_id]
   );
 }
-
-
 // Get attendance by event and optional student
 function getByEvent(event_id, student_id = null) {
   let sql = 'SELECT * FROM event_attendance WHERE id = ?';
@@ -76,6 +85,7 @@ function getBystudEvent(event_id, student_id) {
   const sql = 'SELECT * FROM event_attendance WHERE student_id = ? AND id = ?';
   return db.execute(sql, [student_id, event_id]);
 }
+
 
 function getByStudent(student_id) {
   return db.execute(
@@ -161,29 +171,50 @@ ORDER BY e.start_date_time DESC;;
 function getEventDetails(event_id) {
   return db.execute(
     `SELECT 
+    attendance_id,
+    event_name, event_description, start_date_time, end_date_time, id AS event_id,
+    student_id,
+    studName,
+    progYearSec,
+    timeIn,
+    midEventcheck,
+    timeOut,
+    afternoontimeIn,
+    afternoonmidEventcheck,
+    afternoontimeOut,
+    absenceReqStatus,
+    volunteerReqStatus,
+    volunteerAppId,
+    absence_requests_id,
+    absenceReason,
+    absenceDocumentation,
+    absenceSubmissionDate,
+    absenceParentName,
+    absenceContactInfo,
+    absenceAgreement,
+    remarks,
+    attendanceStats,
+    canSettle
+FROM (
+    -- Students with attendance records (may or may not have absence requests)
+    SELECT 
         ea.attendance_id,
-        ev.*,
+        ev.event_name, ev.event_description, ev.start_date_time, ev.end_date_time, ev.id,
         s.student_id,
         CONCAT(s.first_name, ' ', s.last_name) AS studName,
         CONCAT(c.course_code, ' ', y.year_level, ' ', sec.section_name) AS progYearSec,
-
-        -- Morning times
         DATE_FORMAT(ea.time_in, '%h:%i %p') AS timeIn,
         CASE 
             WHEN ea.trivia_time_in = '1900-01-01 00:00:00' THEN 'Missed'
             ELSE DATE_FORMAT(ea.trivia_time_in, '%h:%i %p')
         END AS midEventcheck,
         DATE_FORMAT(ea.time_out, '%h:%i %p') AS timeOut,
-
-        -- Afternoon times
         DATE_FORMAT(ea.afternoon_time_in, '%h:%i %p') AS afternoontimeIn,
         CASE 
             WHEN ea.afternoon_trivia_time_in = '1900-01-01 00:00:00' THEN 'Missed'
             ELSE DATE_FORMAT(ea.afternoon_trivia_time_in, '%h:%i %p')
         END AS afternoonmidEventcheck,
         DATE_FORMAT(ea.afternoon_time_out, '%h:%i %p') AS afternoontimeOut,
-
-        -- Absence request status
         CASE 
             WHEN sr.absence_requests_id IS NOT NULL THEN
                 CASE sr.status
@@ -194,8 +225,6 @@ function getEventDetails(event_id) {
                 END
             ELSE 'N/A'
         END AS absenceReqStatus,
-
-        -- Volunteer application status
         CASE 
             WHEN sr.volunteered_id IS NOT NULL THEN
                 CASE sr.status
@@ -206,11 +235,14 @@ function getEventDetails(event_id) {
                 END
             ELSE 'N/A'
         END AS volunteerReqStatus,
-
         sr.volunteered_id AS volunteerAppId,
         sr.absence_requests_id AS absence_requests_id,
-
-        -- Remarks logic with absence request override
+        ar.reason AS absenceReason,
+        ar.documentation AS absenceDocumentation,
+        DATE_FORMAT(ar.submission_date, '%Y-%m-%d') AS absenceSubmissionDate,
+        ar.parent_name AS absenceParentName,
+        ar.contact_info AS absenceContactInfo,
+        ar.agreement AS absenceAgreement,
         CASE 
             WHEN sr.absence_requests_id IS NOT NULL AND sr.status = 1 THEN 'Excused'
             WHEN ea.time_in IS NOT NULL 
@@ -230,40 +262,118 @@ function getEventDetails(event_id) {
             THEN 'Missed'
             ELSE ea.remarks
         END AS remarks,
-
-        -- Attendance Status with absence request override
         CASE 
             WHEN sr.absence_requests_id IS NOT NULL AND sr.status = 1 THEN 'Settled'
             WHEN ea.status = 1 THEN 'Settled'
             WHEN ea.status = 2 THEN 'Excused'
             ELSE 'Unsettled'
         END AS attendanceStats,
-
         CASE
             WHEN ea.status != 1 THEN 1
             ELSE 0
         END AS canSettle
-
-    FROM students s
-    LEFT JOIN event_attendance ea 
-        ON s.student_id = ea.student_id 
-        AND ea.id = ?
-    LEFT JOIN student_request sr 
-        ON s.student_id = sr.student_id 
-        AND sr.id = ?  -- link request to the same event
-    LEFT JOIN events ev 
-        ON ev.id = ?
+    FROM event_attendance ea
+    JOIN students s ON ea.student_id = s.student_id
     LEFT JOIN courses c ON s.course_id = c.course_id
     LEFT JOIN year_levels y ON s.year_id = y.year_id
     LEFT JOIN sections sec ON s.section_id = sec.section_id
+    JOIN events ev ON ea.id = ev.id
+    LEFT JOIN student_request sr ON ea.student_id = sr.student_id AND sr.id = ea.id
+    LEFT JOIN absence_requests ar ON sr.absence_requests_id = ar.absence_requests_id AND ar.id = ea.id
+    WHERE ea.id = ?
 
-    -- ✅ Only show students who attended OR have a student_request
-    WHERE ea.student_id IS NOT NULL 
-       OR sr.student_id IS NOT NULL
+    UNION ALL
 
-    GROUP BY s.student_id
-    ORDER BY s.last_name, s.first_name;`,
-    [event_id, event_id, event_id] // pass event_id for all three placeholders
+    -- Students with absence requests (may or may not have attendance records)
+    SELECT 
+        ea.attendance_id,
+        ev.event_name, ev.event_description, ev.start_date_time, ev.end_date_time, ev.id,
+        s.student_id,
+        CONCAT(s.first_name, ' ', s.last_name) AS studName,
+        CONCAT(c.course_code, ' ', y.year_level, ' ', sec.section_name) AS progYearSec,
+        DATE_FORMAT(ea.time_in, '%h:%i %p') AS timeIn,
+        CASE 
+            WHEN ea.trivia_time_in = '1900-01-01 00:00:00' THEN 'Missed'
+            ELSE DATE_FORMAT(ea.trivia_time_in, '%h:%i %p')
+        END AS midEventcheck,
+        DATE_FORMAT(ea.time_out, '%h:%i %p') AS timeOut,
+        DATE_FORMAT(ea.afternoon_time_in, '%h:%i %p') AS afternoontimeIn,
+        CASE 
+            WHEN ea.afternoon_trivia_time_in = '1900-01-01 00:00:00' THEN 'Missed'
+            ELSE DATE_FORMAT(ea.afternoon_trivia_time_in, '%h:%i %p')
+        END AS afternoonmidEventcheck,
+        DATE_FORMAT(ea.afternoon_time_out, '%h:%i %p') AS afternoontimeOut,
+        CASE 
+            WHEN sr.absence_requests_id IS NOT NULL THEN
+                CASE sr.status
+                    WHEN 2 THEN 'Rejected'
+                    WHEN 1 THEN 'Approved'
+                    WHEN 0 THEN 'Pending'
+                    ELSE 'N/A'
+                END
+            ELSE 'N/A'
+        END AS absenceReqStatus,
+        CASE 
+            WHEN sr.volunteered_id IS NOT NULL THEN
+                CASE sr.status
+                    WHEN 2 THEN 'Rejected'
+                    WHEN 1 THEN 'Approved'
+                    WHEN 0 THEN 'Pending'
+                    ELSE 'N/A'
+                END
+            ELSE 'N/A'
+        END AS volunteerReqStatus,
+        sr.volunteered_id AS volunteerAppId,
+        sr.absence_requests_id AS absence_requests_id,
+        ar.reason AS absenceReason,
+        ar.documentation AS absenceDocumentation,
+        DATE_FORMAT(ar.submission_date, '%Y-%m-%d') AS absenceSubmissionDate,
+        ar.parent_name AS absenceParentName,
+        ar.contact_info AS absenceContactInfo,
+        ar.agreement AS absenceAgreement,
+        CASE 
+            WHEN sr.absence_requests_id IS NOT NULL AND sr.status = 1 THEN 'Excused'
+            WHEN ea.time_in IS NOT NULL 
+             AND ea.trivia_time_in IS NOT NULL 
+             AND ea.time_out IS NOT NULL 
+             AND ea.afternoon_time_in IS NOT NULL 
+             AND ea.afternoon_trivia_time_in IS NOT NULL 
+             AND ea.afternoon_time_out IS NOT NULL 
+            THEN 'Present'
+            WHEN ev.end_date_time < NOW() 
+             AND ea.time_in IS NULL 
+             AND ea.trivia_time_in IS NULL 
+             AND ea.time_out IS NULL 
+             AND ea.afternoon_time_in IS NULL 
+             AND ea.afternoon_trivia_time_in IS NULL 
+             AND ea.afternoon_time_out IS NULL 
+            THEN 'Missed'
+            ELSE ea.remarks
+        END AS remarks,
+        CASE 
+            WHEN sr.absence_requests_id IS NOT NULL AND sr.status = 1 THEN 'Settled'
+            WHEN ea.status = 1 THEN 'Settled'
+            WHEN ea.status = 2 THEN 'Excused'
+            ELSE 'Unsettled'
+        END AS attendanceStats,
+        CASE
+            WHEN ea.status != 1 THEN 1
+            ELSE 0
+        END AS canSettle
+    FROM absence_requests ar
+    LEFT JOIN event_attendance ea ON ar.student_id = ea.student_id AND ar.id = ea.id
+    LEFT JOIN students s ON ar.student_id = s.student_id
+    LEFT JOIN courses c ON s.course_id = c.course_id
+    LEFT JOIN year_levels y ON s.year_id = y.year_id
+    LEFT JOIN sections sec ON s.section_id = sec.section_id
+    LEFT JOIN events ev ON ar.id = ev.id
+    LEFT JOIN student_request sr ON ar.student_id = sr.student_id AND sr.id = ar.id
+    WHERE ar.id = ?
+) AS combined
+GROUP BY student_id;
+
+`,
+    [event_id, event_id]
   );
 }
 function settleAttendance(attendance_id) {
@@ -272,6 +382,7 @@ function settleAttendance(attendance_id) {
     [attendance_id]
   );
 }
+
 function getAllAttendanceControls() {
   return db.execute(
     `SELECT 
@@ -365,6 +476,8 @@ function updateAfternoonTriviaMissed(attendanceId) {
   );
 }
 
+
+
 module.exports = {
   createAttendance,
   updateTimeIn,
@@ -383,8 +496,5 @@ module.exports = {
   updateAfternoonTimeOut,
   getAttendanceControlsByEvent,
   updateMorningTriviaMissed,
-  updateAfternoonTriviaMissed
+  updateAfternoonTriviaMissed,
 };
-
-
-

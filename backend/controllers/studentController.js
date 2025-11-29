@@ -189,10 +189,12 @@ const loginStudent = async (req, res) => {
     `, [student_id]);
 
     const student = rows[0];
-    if (!student) return res.status(401).json({ message: 'Invalid credentials' });
+    if (!student) return res.status(401).json({ message: 'Student account not found' });
 
     const isMatch = await bcrypt.compare(password, student.password);
     if (!isMatch) return res.status(401).json({ message: 'Invalid credentials' });
+
+    if(student.status !== 0) return res.status(403).json({message: 'Your Account is Deactivated'});
 
     // ✅ 2FA enabled
     if (student.twofa_status === 1) {

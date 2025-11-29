@@ -211,12 +211,21 @@
                 <ion-card-content>
                   <div class="form-row">
                     <label>Event Name</label>
-                    <ion-input v-model="modalEvent.eventName" />
+                    <ion-input
+                      v-model="modalEvent.eventName"
+                      @keydown="(e) => handleInputKeydown(e, modalEvent.eventName)"
+                      @paste="(e) => handleInputPaste(e, modalEvent.eventName)"
+                    />
                   </div>
 
                   <div class="form-row-text">
                     <label>Event Description</label>
-                    <ion-textarea v-model="modalEvent.eventDesc" />
+                    <ion-textarea
+                      auto-grow="true"
+                      v-model="modalEvent.eventDesc"
+                      @keydown="(e) => handleInputKeydown(e, modalEvent.eventDesc)"
+                      @paste="(e) => handleInputPaste(e, modalEvent.eventDesc)"
+                    />
                   </div>
 
                   <div class="form-row">
@@ -435,17 +444,32 @@
                   <!-- Note -->
                   <div class="form-row-acad">
                     <label>Note</label>
-                    <ion-textarea v-model="modalEvent.eventNote" :value="modalEvent.eventNote"></ion-textarea>
+                    <ion-textarea
+                      auto-grow="true"
+                      v-model="modalEvent.eventNote"
+                      @keydown="(e) => handleInputKeydown(e, modalEvent.eventNote)"
+                      @paste="(e) => handleInputPaste(e, modalEvent.eventNote)"
+                    />
                   </div>
 
                   <!-- Reminder -->
                   <div class="form-row-acad">
                     <label>Reminder</label>
-                    <ion-textarea v-model="modalEvent.eventReminder" :value="modalEvent.eventReminder"></ion-textarea>
+                    <ion-textarea
+                      auto-grow="true"
+                      v-model="modalEvent.eventReminder"
+                      @keydown="(e) => handleInputKeydown(e, modalEvent.eventReminder)"
+                      @paste="(e) => handleInputPaste(e, modalEvent.eventReminder)"
+                    />
+
                   </div>
                 <div class="form-row-con">
                   <label>Call To Action Buttons Instruction</label>
-                  <ion-input v-model="modalEvent.ctabtn" :value="modalEvent.ctabtn"></ion-input>
+                  <ion-input
+                    v-model="modalEvent.ctabtn"
+                    @keydown="(e) => handleInputKeydown(e, modalEvent.ctabtn)"
+                    @paste="(e) => handleInputPaste(e, modalEvent.ctabtn)"
+                  />
 
                   <div style="display: flex; align-items: center; gap: 150px; margin-top: 10px; margin-bottom: 15px; color: rgb(31, 30, 35); font-weight: 500;">
                     <div style="display: flex; align-items: center;">
@@ -616,6 +640,29 @@ watch(
     }
   }
 );
+
+const handleInputKeydown = (e: KeyboardEvent, fieldRef: any) => {
+  const allowedKeys = ['Backspace','Delete','ArrowLeft','ArrowRight','ArrowUp','ArrowDown','Tab','Enter'];
+  if (allowedKeys.includes(e.key)) return;
+
+  const currentValue = String(fieldRef || '');
+
+  // Prevent first character space or double spaces
+  if (e.key === ' ' || e.code === 'Space') {
+    if (currentValue.length === 0 || currentValue.endsWith(' ')) {
+      e.preventDefault();
+    }
+  }
+  // All other characters including special characters are allowed
+};
+
+const handleInputPaste = (e: ClipboardEvent, fieldRef: any) => {
+  e.preventDefault();
+  const pastedText = e.clipboardData?.getData('text') || '';
+  const cleanedText = pastedText.replace(/\s{2,}/g, ' ').trim();
+  fieldRef += cleanedText;
+};
+
 
 // ✅ Search filter for manual mode
 const filterStudents = () => {
@@ -814,8 +861,10 @@ const updateEvent = async () => {
       selection_mode: modalEvent.value.selectionMode,
       selected_course: modalEvent.value.selectedCourse,
       selected_students: JSON.stringify(modalEvent.value.selectedStudents), 
-      event_program_attachment: modalEvent.value.fileName,
-      event_program_file_base64: modalEvent.value.eventProgramBase64,
+
+      // Send the base64 string directly
+      event_program_attachment: modalEvent.value.eventProgramBase64 || null,
+
       event_note: modalEvent.value.eventNote,
       event_reminder: modalEvent.value.eventReminder,
       call_to_action_buttons_instruction: modalEvent.value.ctabtn,
@@ -826,7 +875,6 @@ const updateEvent = async () => {
       custom_notification: modalEvent.value.customNotification ? 1 : 0,
       mid_event_check: modalEvent.value.midEventCheck ? 1 : 0,
     });
-
     Swal.fire({
       icon: 'success',
       title: 'Success',

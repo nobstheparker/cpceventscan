@@ -16,7 +16,7 @@
         <!-- Sub-header -->
         <div class="header-bottom">
           <ion-buttons slot="start">
-            <ion-back-button defaultHref="/profile" />
+            <ion-back-button defaultHref="/profile" text="" style="color: white;"/>
           </ion-buttons>
           <h2>
             PERSONAL INFO
@@ -33,13 +33,23 @@
 
           <ion-item>
             <ion-label position="stacked">First Name:</ion-label>
-            <ion-input v-if="isEditing" v-model="tempStudent.first_name"></ion-input>
+            <ion-input
+              v-if="isEditing"
+              v-model="tempStudent.first_name"
+              placeholder="First Name"
+              @ionInput="(e) => handleIonInput(e, 'first_name')"
+            ></ion-input>
             <ion-input v-else :value="student.first_name" readonly></ion-input>
           </ion-item>
 
           <ion-item>
             <ion-label position="stacked">Last Name:</ion-label>
-            <ion-input v-if="isEditing" v-model="tempStudent.last_name"></ion-input>
+            <ion-input
+              v-if="isEditing"
+              v-model="tempStudent.last_name"
+              placeholder="Last Name"
+              @ionInput="(e) => handleIonInput(e, 'last_name')"
+            ></ion-input>
             <ion-input v-else :value="student.last_name" readonly></ion-input>
           </ion-item>
           <ion-item>
@@ -107,19 +117,34 @@
             </ion-item>
           <ion-item>
             <ion-label position="stacked">Email Address:</ion-label>
-            <ion-input v-if="isEditing" v-model="tempStudent.email"></ion-input>
+            <ion-input
+              v-if="isEditing"
+              v-model="tempStudent.email"
+              placeholder="Email"
+              @ionInput="(e) => handleIonInput(e, 'email')"
+            ></ion-input>
             <ion-input v-else :value="student.email" readonly></ion-input>
           </ion-item>
 
           <ion-item>
             <ion-label position="stacked">Contact Number:</ion-label>
-            <ion-input v-if="isEditing" v-model="tempStudent.phone"></ion-input>
+            <ion-input
+              v-if="isEditing"
+              v-model="tempStudent.phone"
+              placeholder="Phone"
+              @ionInput="(e) => handleIonInput(e, 'phone')"
+            ></ion-input>
             <ion-input v-else :value="student.phone" readonly></ion-input>
           </ion-item>
 
           <ion-item>
             <ion-label position="stacked">Home Address:</ion-label>
-            <ion-input v-if="isEditing" v-model="tempStudent.address" />
+            <ion-input
+              v-if="isEditing"
+              v-model="tempStudent.address"
+              placeholder="Address"
+              @ionInput="(e) => handleIonInput(e, 'address')"
+            ></ion-input>
             <ion-input v-else :value="student.address" readonly></ion-input>
            </ion-item>
         </ion-list>
@@ -325,6 +350,39 @@ onMounted(async () => {
   await fetchSections();
   await fetchYearLevels();
 });
+
+const handleIonInput = (e: any, field: string) => {
+  let value: string = e.detail.value || "";
+
+  // Remove leading spaces
+  value = value.replace(/^\s+/g, "");
+
+  switch (field) {
+    case "first_name":
+    case "last_name":
+      // Only letters and spaces, remove double spaces
+      value = value.replace(/[^A-Za-z\s]/g, "").replace(/\s{2,}/g, " ");
+      break;
+
+    case "phone":
+      // Only numbers, max 11 characters, no spaces
+      value = value.replace(/[^0-9]/g, "").slice(0, 11);
+      break;
+
+    case "email":
+      // Allow all characters except spaces
+      value = value.replace(/\s/g, "");
+      break;
+
+    case "address":
+      // Allow all characters, remove double spaces
+      value = value.replace(/\s{2,}/g, " ");
+      break;
+  }
+
+  tempStudent[field] = value;
+};
+
 </script>
 
 

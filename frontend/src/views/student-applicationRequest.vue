@@ -15,7 +15,7 @@
           <!-- Top bar -->
           <div class="header-bottom">
             <IonButtons slot="start">
-              <IonBackButton defaultHref="/profile" />
+              <IonBackButton defaultHref="/profile" text="" style="color: white;"/>
             </IonButtons>
             <IonTitle class="event-title">VOLUNTEER APPLICATION</IonTitle>
           </div>

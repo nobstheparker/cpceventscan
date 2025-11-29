@@ -190,11 +190,86 @@
         </div>
         <div style="padding:15px 15px; background:#D9D9D9;">
           <label><b>Name:</b></label>
-          <input v-model="selectedAdmin.name" placeholder="Enter name" style="width:100%; padding:6px; margin-bottom:8px; border-radius:4px;" />
+          <input
+            v-model="selectedAdmin.name"
+            placeholder="Enter name"
+            style="width:100%; padding:6px; margin-bottom:8px; border-radius:4px;"
+            @keydown="(e) => {
+              const allowedKeys = ['Backspace', 'ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown'];
+
+              // Allow backspace and arrow keys
+              if (allowedKeys.includes(e.key)) return;
+
+              // Prevent space as first character, when empty, or if previous character is space
+              if (e.key === ' ') {
+                if (!selectedAdmin.name || selectedAdmin.name.length === 0) {
+                  e.preventDefault();
+                  return;
+                }
+                // Prevent double space
+                const lastChar = selectedAdmin.name.slice(-1);
+                if (lastChar === ' ') {
+                  e.preventDefault();
+                  return;
+                }
+                return; // allow single space after first character
+              }
+
+              // Allow only letters A-Z and a-z
+              if (!/^[a-zA-Z]$/.test(e.key)) {
+                e.preventDefault();
+              }
+            }"
+/>
           <label><b>Email:</b></label>
-          <input v-model="selectedAdmin.email" placeholder="Enter email" style="width:100%; padding:6px; margin-bottom:8px; border-radius:4px;" />
+          <input
+            v-model="selectedAdmin.email"
+            placeholder="Enter email"
+            style="width:100%; padding:6px; margin-bottom:8px; border-radius:4px;"
+            @keydown="(e) => {
+              const allowedKeys = [
+                'Backspace', 'ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown'
+              ];
+
+              // Allow backspace and arrow keys
+              if (allowedKeys.includes(e.key)) return;
+
+              // Block space anywhere
+              if (e.key === ' ') {
+                e.preventDefault();
+                return;
+              }
+
+              // Allow only letters, numbers, and common email symbols
+              if (!/^[a-zA-Z0-9@._-]$/.test(e.key)) {
+                e.preventDefault();
+              }
+            }"
+          />
           <label><b>New Password:</b></label>
-          <input type="password" v-model="selectedAdmin.password" placeholder="Enter new password" style="width:100%; padding:6px; margin-bottom:8px; border-radius:4px;" />
+          <input
+            type="password"
+            v-model="selectedAdmin.password"
+            placeholder="Enter new password"
+            style="width:100%; padding:6px; margin-bottom:8px; border-radius:4px;"
+            @keydown="(e) => {
+              const allowedKeys = [
+                'Backspace', 'ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown'
+              ];
+
+              // Allow backspace and arrow keys
+              if (allowedKeys.includes(e.key)) return;
+
+              // Block space anywhere
+              if (e.key === ' ') {
+                e.preventDefault();
+                return;
+              }
+
+              // Allow all other characters
+              // Letters, numbers, symbols are allowed
+            }"
+          />
           <ion-button expand="block" style="--background: #07055d; --color: #ffff00; margin-top: 12px;" @click="selectedAdmin.isLoggedIn ? updateLoggedInAdminProfile() : updateOtherAdminProfile()">
             Update
           </ion-button>
@@ -211,11 +286,82 @@
         </div>
         <div style="padding:15px 15px; background:#D9D9D9;">
           <label><b>Name:</b></label>
-          <input v-model="newAdminAccount.name" placeholder="Enter name" style="width:100%; padding:6px; margin-bottom:8px; border-radius:4px;" />
+         <input
+            v-model="newAdminAccount.name"
+            placeholder="Enter name"
+            style="width:100%; padding:6px; margin-bottom:8px; border-radius:4px;"
+            @keydown="(e) => {
+              const allowedKeys = ['Backspace', 'ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown'];
+
+              // Allow navigation keys and backspace
+              if (allowedKeys.includes(e.key)) return;
+
+              // Prevent space as first character, when empty, or if previous character is space
+              if (e.key === ' ') {
+                if (!newAdminAccount.name || newAdminAccount.name.length === 0) {
+                  e.preventDefault();
+                  return;
+                }
+                const lastChar = newAdminAccount.name.slice(-1);
+                if (lastChar === ' ') {
+                  e.preventDefault();
+                  return;
+                }
+                return; // allow single space after first character
+              }
+
+              // Allow only letters A-Z and a-z
+              if (!/^[a-zA-Z]$/.test(e.key)) {
+                e.preventDefault();
+              }
+            }"
+          />
           <label><b>Email:</b></label>
-          <input v-model="newAdminAccount.email" placeholder="Enter email" style="width:100%; padding:6px; margin-bottom:8px; border-radius:4px;" />
+          <input
+            v-model="newAdminAccount.email"
+            placeholder="Enter email"
+            style="width:100%; padding:6px; margin-bottom:8px; border-radius:4px;"
+            @keydown="(e) => {
+              const allowedKeys = [
+                'Backspace', 'ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown'
+              ];
+
+              // Allow backspace and arrow keys
+              if (allowedKeys.includes(e.key)) return;
+
+              // Block space anywhere
+              if (e.key === ' ') {
+                e.preventDefault();
+                return;
+              }
+
+              // Allow only letters, numbers, and common email symbols
+              if (!/^[a-zA-Z0-9@._-]$/.test(e.key)) {
+                e.preventDefault();
+              }
+            }"
+          />
           <label><b>Password:</b></label>
-          <input type="password" v-model="newAdminAccount.password" placeholder="Enter password" style="width:100%; padding:6px; margin-bottom:8px; border-radius:4px;" />
+          <input
+            type="password"
+            v-model="newAdminAccount.password"
+            placeholder="Enter password"
+            style="width:100%; padding:6px; margin-bottom:8px; border-radius:4px;"
+            @keydown="(e) => {
+              const allowedKeys = ['Backspace', 'ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown'];
+
+              // Allow backspace and arrow keys
+              if (allowedKeys.includes(e.key)) return;
+
+              // Block space anywhere
+              if (e.key === ' ') {
+                e.preventDefault();
+                return;
+              }
+
+              // All other characters allowed
+            }"
+          />
           <ion-button expand="block" style="--background: #07055d; --color: #ffff00; margin-top: 12px;" @click="addNewAdminAccount">
             Add
           </ion-button>

@@ -247,7 +247,6 @@ ion-accordion ion-item {
   bottom: 0;
   width: 100%;
   z-index: 100;
-  margin-top: 20px;
 }
 .footer-icons {
   display: flex;

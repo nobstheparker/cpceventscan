@@ -78,12 +78,67 @@
 
                   <div class="form-row">
                     <label>Course Code</label>
-                    <ion-input v-model="CourseCode" required></ion-input>
+                    <ion-input
+                    v-model="CourseCode"
+                    required
+                    @keydown="(e) => {
+                      const allowedKeys = ['Backspace','Tab','Enter','ArrowLeft','ArrowRight','ArrowUp','ArrowDown','Delete','Home','End'];
+                      if (allowedKeys.includes(e.key)) return;
+
+                      const currentValue = CourseCode || '';
+
+                      // Prevent space as first character or double spaces
+                      if (e.key === ' ') {
+                        if (currentValue.length === 0 || currentValue.endsWith(' ')) {
+                          e.preventDefault();
+                        }
+                        return;
+                      }
+
+                      // Block numbers, allow letters & special characters
+                      if (!/^[^0-9]$/.test(e.key)) {
+                        e.preventDefault();
+                      }
+                    }"
+                    @paste="(e) => {
+                      e.preventDefault();
+                      const pastedText = e.clipboardData?.getData('text') || '';
+                      CourseCode += pastedText.replace(/[0-9]/g, '').replace(/\s{2,}/g, ' ').trim();
+                    }"
+                  />
+
                   </div>
 
                   <div class="form-row">
                     <label>Course Name</label>
-                    <ion-input v-model="CourseName" required></ion-input>
+                    <ion-input
+                    v-model="CourseName"
+                    required
+                    @keydown="(e) => {
+                      const allowedKeys = ['Backspace','Tab','Enter','ArrowLeft','ArrowRight','ArrowUp','ArrowDown','Delete','Home','End'];
+                      if (allowedKeys.includes(e.key)) return; // allow navigation keys
+
+                      const currentValue = CourseName || '';
+
+                      // Handle spaces: prevent first character space and double spaces
+                      if (e.key === ' ') {
+                        if (currentValue.length === 0 || currentValue.endsWith(' ')) {
+                          e.preventDefault();
+                        }
+                        return;
+                      }
+
+                      // Allow letters only
+                      if (!/^[a-zA-Z]$/.test(e.key)) e.preventDefault();
+                    }"
+                    @paste="(e) => {
+                      e.preventDefault();
+                      const pastedText = e.clipboardData?.getData('text') || '';
+                      // Remove non-letters and double spaces, trim
+                      const cleanedText = pastedText.replace(/[^a-zA-Z ]/g, '').replace(/\s{2,}/g, ' ').trim();
+                      CourseName += cleanedText;
+                    }"
+                  />
                   </div>
 
 

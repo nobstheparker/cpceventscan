@@ -84,15 +84,69 @@
             <ion-list>
               <ion-item>
                 <ion-label position="stacked" style="font-size: 18px !important; margin-bottom: 6px;">Current Password</ion-label>
-                <ion-input type="password" v-model="currentPassword" required></ion-input>
+                <ion-input
+                  type="password"
+                  v-model="currentPassword"
+                  required
+                  @keydown="(e) => {
+                    const allowedKeys = ['Backspace', 'ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown'];
+
+                    // Allow backspace and arrow keys
+                    if (allowedKeys.includes(e.key)) return;
+
+                    // Block space anywhere
+                    if (e.key === ' ') {
+                      e.preventDefault();
+                      return;
+                    }
+
+                    // All other characters are allowed
+                  }"
+                />
               </ion-item>
               <ion-item>
                 <ion-label position="stacked" style="font-size: 18px !important; margin-bottom: 6px;">New Password</ion-label>
-                <ion-input type="password" v-model="newPassword" required></ion-input>
+                <ion-input
+                  type="password"
+                  v-model="newPassword"
+                  required
+                  @keydown="(e) => {
+                    const allowedKeys = ['Backspace', 'ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown'];
+
+                    // Allow backspace and arrow keys
+                    if (allowedKeys.includes(e.key)) return;
+
+                    // Block space anywhere
+                    if (e.key === ' ') {
+                      e.preventDefault();
+                      return;
+                    }
+
+                    // All other characters allowed
+                  }"
+                />
               </ion-item>
               <ion-item>
                 <ion-label position="stacked" style="font-size: 18px !important; margin-bottom: 6px;">Confirm Password</ion-label>
-                <ion-input type="password" v-model="confirmPassword" required></ion-input>
+                <ion-input
+                  type="password"
+                  v-model="confirmPassword"
+                  required
+                  @keydown="(e) => {
+                    const allowedKeys = ['Backspace', 'ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown'];
+
+                    // Allow backspace and arrow keys
+                    if (allowedKeys.includes(e.key)) return;
+
+                    // Block space anywhere
+                    if (e.key === ' ') {
+                      e.preventDefault();
+                      return;
+                    }
+
+                    // All other characters allowed
+                  }"
+                />
               </ion-item>
             </ion-list>
             <ion-button expand="block" @click="submitPasswordChange" style="margin: 15px; --background: #08055e !important; color: #ffff00;font-weight: 600;">

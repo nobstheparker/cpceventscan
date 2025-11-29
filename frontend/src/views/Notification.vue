@@ -81,11 +81,17 @@
               </div>
               <div style="padding:15px 15px; background:#D9D9D9;">
                 <label><b>Notification Type:</b></label>
-                <input v-model="newNotification.type" placeholder="Enter type"
+                <input
+                  v-model="newNotification.type"
+                  placeholder="Enter type"
+                  @input="handleTypeInput"
                   style="width:100%; padding:6px; border:1px solid #b1b1b2; border-radius:4px; background-color:white; font-size:14px; color:black; margin-bottom:5px;" />
-
                 <label><b>Message:</b></label>
-                <textarea auto-grow="true" v-model="newNotification.message" placeholder="Enter message"
+                <textarea
+                  auto-grow="true"
+                  v-model="newNotification.message"
+                  placeholder="Enter message"
+                  @input="handleMessageInput"
                   style="width: 100%; padding: 6px; border: 1px solid #b1b1b2; border-radius: 4px; background-color: white; font-size: 14px; color: black; min-height: 40px; max-height: 180px; overflow-y: auto; resize: vertical;">
                 </textarea>
 
@@ -280,6 +286,25 @@ const showStudentDropdown = ref(false);
 const selectedStudents = ref<number[]>([]);
 const selectAll = ref(false);
 const searchQueryStudents = ref('');
+
+const handleMessageInput = (e: Event) => {
+  const target = e.target as HTMLTextAreaElement;
+  let value = target.value;
+
+  value = value.replace(/^\s+/g, "");      // no leading space
+  value = value.replace(/\s{2,}/g, " ");   // no double space
+
+  newNotification.message = value;
+};
+const handleTypeInput = (e: Event) => {
+  const target = e.target as HTMLInputElement;
+  let value = target.value;
+
+  value = value.replace(/^\s+/g, "");      // no leading space
+  value = value.replace(/\s{2,}/g, " ");   // no double space
+
+  newNotification.type = value;
+};
 
 // Fetch data safely
 const fetchCourses = async () => {

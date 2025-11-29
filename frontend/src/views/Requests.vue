@@ -107,6 +107,7 @@
                   <th @click="sortTable('studNameName','absence')">Student Name {{ getSortIcon('studNameName','absence') }}</th>
                   <th @click="sortTable('eprogYearSec','absence')">Program, Yr. & Sec {{ getSortIcon('eprogYearSec','absence') }}</th>
                   <th>Type</th>
+                  <th>Event Name</th>
                   <th @click="sortTable('reqDate','absence')">Date Requested {{ getSortIcon('reqDate','absence') }}</th>
                   <th @click="sortTable('reqstats','absence')">Status {{ getSortIcon('reqstats','absence') }}</th>
                   <th>Actions</th>
@@ -117,6 +118,7 @@
                   <td>{{ req.first_name }} {{ req.middle_name }} {{ req.studNameName }}</td>
                   <td>{{ req.eprogYearSec }}</td>
                   <td>{{ req.reqType }}</td>
+                  <td>{{ req.event_name }}</td>
                   <td>{{ formatDate(req.reqDate) }}</td>
                   <td>{{ req.reqstats }}</td>
                   <td>
@@ -210,7 +212,7 @@
           <p><strong>Date Requested:</strong> {{ formatDate(selectedAbsence.reqDate) }}</p>
           <p><strong>Reason:</strong> {{ selectedAbsence.reason }}</p>
           <p><strong>Documentation:</strong> 
-            <a :href="`/uploads/${selectedAbsence.documentation}`" target="_blank">{{ selectedAbsence.documentation }}</a>
+            <ion-button size="small" @click="downloadDocument(selectedAbsence.documentation)">Download {{ selectedAbsence.documentation }}</ion-button>
           </p>
           <p><strong>Submission Date:</strong> {{ formatDate(selectedAbsence.submission_date) }}</p>
           <p><strong>Parent Name:</strong> {{ selectedAbsence.parent_name }}</p>
@@ -287,7 +289,6 @@ addIcons({
   'close': close,
   'close-outline': closeOutline
 });
-
 
 // ------------------------
 // Router & logout
@@ -369,6 +370,11 @@ const showVolunteerModal = ref(false);
 const selectedAbsence = ref<any>(null);
 const selectedVolunteer = ref<any>(null);
 
+const viewDocument = (filename: string) => {
+  const url = `/uploads/${filename}`;
+  window.open(url, "_blank");
+};
+
 const openAbsenceModal = (req: any) => {
   selectedAbsence.value = req;
   showAbsenceModal.value = true;
@@ -380,6 +386,61 @@ const openVolunteerModal = (req: any) => {
 function closeModal() {
   showAbsenceModal.value = false;
 }
+
+// ------------------------
+// Download function (updated to force download using blob)
+// ------------------------
+const downloadDocument = async (filename: string) => {
+  if (!filename || filename.trim() === '') {
+    Swal.fire({
+      title: 'Error',
+      text: 'No documentation file available to download.',
+      icon: 'error',
+      didOpen: () => {
+        document.body.classList.remove('swal2-height-auto');
+        document.documentElement.classList.remove('swal2-height-auto');
+      }
+    });
+    return;
+  }
+
+  try {
+    // Use the full backend URL (adjust if your backend port changes)
+    const fileUrl = `http://localhost:5000/uploads/${filename}`;
+    
+    // Fetch the file as a blob
+    const response = await fetch(fileUrl);
+    if (!response.ok) {
+      throw new Error('File not found or server error');
+    }
+    const blob = await response.blob();
+    
+    // Create a blob URL and trigger download
+    const blobUrl = window.URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = blobUrl;
+    link.download = filename; // Forces download with the original filename
+    link.style.display = 'none';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    
+    // Clean up the blob URL
+    window.URL.revokeObjectURL(blobUrl);
+  } catch (error) {
+    console.error('Download failed:', error);
+    Swal.fire({
+      title: 'Download Failed',
+      text: 'Unable to download the file. Please try again.',
+      icon: 'error',
+      didOpen: () => {
+        document.body.classList.remove('swal2-height-auto');
+        document.documentElement.classList.remove('swal2-height-auto');
+      }
+    });
+  }
+};
+
 // ------------------------
 // Date formatting
 // ------------------------
@@ -467,6 +528,7 @@ const filteredAbsenceRequests = computed(() => {
         r.eprogYearSec,
         r.reqType,
         r.reqstats,
+        r.event_name,
       ]
         .filter(Boolean)
         .some((val) => val.toLowerCase().includes(keyword))
@@ -510,6 +572,7 @@ const filteredVolunteerRequests = computed(() => {
         r.eprogYearSec,
         r.reqType,
         r.reqstats,
+        r.event_name,
       ]
         .filter(Boolean)
         .some((val) => val.toLowerCase().includes(keyword))
@@ -629,6 +692,7 @@ const updateVolunteerStatus = async (req: any, status: number) => {
   }
 };
 </script>
+
 
 <style scoped>
 .toolbar-container::part(backdrop) {

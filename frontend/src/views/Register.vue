@@ -95,13 +95,62 @@
                         <ion-col size="6">
                           <div class="form-row">
                             <label>Last Name</label>
-                            <ion-input v-model="lastName" required></ion-input>
+                            <ion-input
+                              v-model="lastName"
+                              required
+                              placeholder=""
+                              @keydown="(e) => {
+                                const allowedKeys = ['Backspace','Tab','Enter','ArrowLeft','ArrowRight','ArrowUp','ArrowDown','Delete','Home','End'];
+                                if (allowedKeys.includes(e.key)) return; // allow navigation keys
+
+                                const currentValue = lastName || '';
+
+                                // Handle space
+                                if (e.key === ' ') {
+                                  // Prevent first character space or double space
+                                  if (currentValue.length === 0 || currentValue.endsWith(' ')) {
+                                    e.preventDefault();
+                                    return;
+                                  }
+                                  return; // allow single space after a letter
+                                }
+
+                                // Block numbers and symbols, allow letters only
+                                if (!/^[a-zA-Z]$/.test(e.key)) {
+                                  e.preventDefault();
+                                }
+                              }"
+                            />
                           </div>
                         </ion-col>
                         <ion-col size="6">
                           <div class="form-row">
                             <label>First Name</label>
-                            <ion-input v-model="firstName" required></ion-input>
+                            <ion-input
+                              v-model="firstName"
+                              required
+                              @keydown="(e) => {
+                                const allowedKeys = ['Backspace','Tab','Enter','ArrowLeft','ArrowRight','ArrowUp','ArrowDown','Delete','Home','End'];
+                                if (allowedKeys.includes(e.key)) return; // allow navigation keys
+
+                                const currentValue = firstName || '';
+
+                                // Handle space
+                                if (e.key === ' ') {
+                                  // Prevent first character space or double space
+                                  if (currentValue.length === 0 || currentValue.endsWith(' ')) {
+                                    e.preventDefault();
+                                    return;
+                                  }
+                                  return; // allow single space after a letter
+                                }
+
+                                // Block numbers and symbols, allow letters only
+                                if (!/^[a-zA-Z]$/.test(e.key)) {
+                                  e.preventDefault();
+                                }
+                              }"
+                            />
                           </div>
                         </ion-col>
                       </ion-row>
@@ -110,7 +159,32 @@
                         <ion-col size="6">
                           <div class="form-row">
                             <label>Middle Name</label>
-                            <ion-input v-model="middleName"></ion-input>
+                            <ion-input
+                              v-model="middleName"
+                              required
+                              @keydown="(e) => {
+                                const allowedKeys = ['Backspace','Tab','Enter','ArrowLeft','ArrowRight','ArrowUp','ArrowDown','Delete','Home','End'];
+                                if (allowedKeys.includes(e.key)) return; // allow navigation keys
+
+                                const currentValue = middleName || '';
+
+                                // Handle space
+                                if (e.key === ' ') {
+                                  // Prevent first character space or double space
+                                  if (currentValue.length === 0 || currentValue.endsWith(' ')) {
+                                    e.preventDefault();
+                                    return;
+                                  }
+                                  return; // allow single space after a letter
+                                }
+
+                                // Block numbers and symbols, allow letters only
+                                if (!/^[a-zA-Z]$/.test(e.key)) {
+                                  e.preventDefault();
+                                }
+                              }"
+                            />
+
                           </div>
                         </ion-col>
                         <ion-col size="6" class="birthday-wrapper">
@@ -177,7 +251,25 @@
                         <ion-col size="12">
                           <div class="form-row-con">
                             <label>Email</label>
-                            <ion-input type="email" v-model="email" required></ion-input>
+                            <ion-input
+                              type="email"
+                              v-model="email"
+                              required
+                              @keydown="(e) => {
+                                const allowedKeys = ['Backspace','Tab','Enter','ArrowLeft','ArrowRight','ArrowUp','ArrowDown','Delete','Home','End'];
+                                if (allowedKeys.includes(e.key)) return; // allow navigation keys
+
+                                // Prevent any space
+                                if (e.key === ' ') {
+                                  e.preventDefault();
+                                }
+                              }"
+                              @paste="(e) => {
+                                e.preventDefault();
+                                const pastedText = e.clipboardData?.getData('text') || '';
+                                email = pastedText.replace(/\s/g, ''); // remove all spaces
+                              }"
+                            />
                           </div>
                         </ion-col>
                       </ion-row>
@@ -186,7 +278,26 @@
                         <ion-col size="12">
                           <div class="form-row-con">
                             <label>Password</label>
-                            <ion-input type="password" v-model="password" required></ion-input>
+                            <ion-input
+                              type="password"
+                              v-model="password"
+                              required
+                              @keydown="(e) => {
+                                const allowedKeys = ['Backspace','Tab','Enter','ArrowLeft','ArrowRight','ArrowUp','ArrowDown','Delete','Home','End'];
+                                if (allowedKeys.includes(e.key)) return; // allow navigation keys
+
+                                // Block spaces
+                                if (e.key === ' ') {
+                                  e.preventDefault();
+                                }
+                              }"
+                              @paste="(e) => {
+                                e.preventDefault();
+                                const pastedText = e.clipboardData?.getData('text') || '';
+                                // Remove all spaces from pasted text
+                                password = pastedText.replace(/\s/g, '');
+                              }"
+                            />
                           </div>
                         </ion-col>
                       </ion-row>

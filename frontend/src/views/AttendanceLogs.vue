@@ -71,7 +71,16 @@
           <ion-row class="ion-align-items-center ion-justify-content-between" style="margin-bottom: 10px;">
             <ion-col size="7"></ion-col>
             <ion-col size="5">
-              <ion-searchbar v-model="searchQuery" class="white-searchbar" placeholder="Search..." animated />
+
+              <!--:value ='searchQuery'-->
+              <ion-searchbar
+                v-model="searchQuery"
+                @ionInput="onSearchInput"
+                placeholder="Search..."
+                class="white-searchbar"
+                animated
+              />
+
             </ion-col>
           </ion-row>
 
@@ -119,18 +128,42 @@
           </div>
 
           <!-- Pagination -->
-          <div class="pagination-container" style="margin-top:12px;">
-            <button :disabled="currentPage===1" @click="currentPage--">&laquo; Prev</button>
-            <button v-for="page in totalPages" :key="page" :class="{ active: currentPage===page }" @click="currentPage=page">{{ page }}</button>
-            <button :disabled="currentPage===totalPages" @click="currentPage++">Next &raquo;</button>
-          </div>
+          <div class="pagination-container">
+              <button 
+                :disabled="currentPage === 1" 
+                @click="currentPage--"
+                class="pagination-button"
+                aria-label="Previous page"
+              >
+                &laquo; Prev
+              </button>
+
+              <button 
+                v-for="page in totalPages"
+                :key="page"
+                :class="['pagination-button', { active: currentPage === page }] "
+                @click="currentPage = page"
+                :aria-current="currentPage === page ? 'page' : false"
+              >
+                {{ page }}
+              </button>
+
+              <button 
+                :disabled="currentPage === totalPages" 
+                @click="currentPage++"
+                class="pagination-button"
+                aria-label="Next page"
+              >
+                Next &raquo;
+              </button>
+        </div>
         </div>
 
       </div>
     </ion-content>
 
     <!-- Footer -->
-    <div class="footer" style="text-align:center; padding:8px; background:#f3f4f6;">
+    <div class="footer" style="text-align:center; padding:8px; background:#07055D;">
       <ion-text><small>&copy; All Rights Reserved PPG 2025.</small></ion-text>
     </div>
   </ion-page>
@@ -141,6 +174,18 @@ import { ref, computed, onMounted } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import axios from 'axios';
 import Swal from 'sweetalert2';
+
+//added line for the search bar
+import { 
+  IonPage, 
+  IonHeader, 
+  IonToolbar, 
+  IonContent, 
+  IonRow, 
+  IonCol, 
+  IonSearchbar, 
+  IonText 
+} from '@ionic/vue';
 
 const route = useRoute();
 const router = useRouter();
@@ -228,8 +273,14 @@ onMounted(async () => {
   fetchAttendanceDetails();
 });
 
+const onSearchInput = (event: any) => {
+   // searchQuery.value = event.detail.value;
+   searchQuery.value = event.detail.value || event.target.value; 
+}; 
+
 const filteredData = computed(()=>{
   let result = [...attendanceDetails.value];
+
   if(searchQuery.value){
     const q = searchQuery.value.toLowerCase();
     result = result.filter(item => Object.values(item).some(val=>String(val ?? '').toLowerCase().includes(q)));

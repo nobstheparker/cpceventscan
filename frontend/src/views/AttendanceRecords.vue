@@ -96,18 +96,6 @@
                       Date
                       <span v-if="sortColumn === 'eventDate'">{{ sortOrder === 'asc' ? '▲' : '▼' }}</span>
                     </th>
-                    <th style="cursor:pointer;" @click="sortData('totalAttendees')">
-                      Total Attendees
-                      <span v-if="sortColumn === 'totalAttendees'">{{ sortOrder === 'asc' ? '▲' : '▼' }}</span>
-                    </th>
-                    <th style="cursor:pointer;" @click="sortData('totalAbsences')">
-                      Total Absences
-                      <span v-if="sortColumn === 'totalAbsences'">{{ sortOrder === 'asc' ? '▲' : '▼' }}</span>
-                    </th>
-                    <th style="cursor:pointer;" @click="sortData('incompleteAttendance')">
-                      Incomplete Attendance
-                      <span v-if="sortColumn === 'incompleteAttendance'">{{ sortOrder === 'asc' ? '▲' : '▼' }}</span>
-                    </th>
                     <th style="cursor:pointer;" @click="sortData('eventStats')">
                       Event Status
                       <span v-if="sortColumn === 'eventStats'">{{ sortOrder === 'asc' ? '▲' : '▼' }}</span>
@@ -119,9 +107,6 @@
                   <tr v-for="attendanceRecord in paginatedRecords" :key="attendanceRecord.eventID">
                     <td>{{ attendanceRecord.eventName }}</td>
                     <td>{{ attendanceRecord.eventDate }}</td>
-                    <td>{{ attendanceRecord.totalAttendees }}</td>
-                    <td>{{ attendanceRecord.totalAbsences }}</td>
-                    <td>{{ attendanceRecord.incompleteAttendance }}</td>
                     <td>{{ attendanceRecord.eventStats }}</td>
                     <td>
                       <ion-button
@@ -271,6 +256,14 @@ const fetchAttendanceRecords = async () => {
     const events = Array.isArray(res.data) ? res.data : res.data.events || [];
 
     attendanceRecords.value = events.map((event: any) => {
+      //added code by kaye
+      // const complete = Number(event.totalCompleteAttendance || 0);
+      // const incomplete = Number(event.totalIncompleteAttendance || 0);
+      // const absences = Number(event.totalAbsences || 0);
+
+      // const totalAttendeesSummary = complete + incomplete;
+      //til here
+
       return {
         eventID: event.eventID,
         eventName: event.eventName,
@@ -279,6 +272,12 @@ const fetchAttendanceRecords = async () => {
         totalAbsences: Number(event.totalAbsences),
         incompleteAttendance: Number(event.incompleteAttendance),
         eventStats: event.eventStats
+
+        //added a revise code -k
+        // totalAttendees: totalAttendeesSummary,
+        // totalAbsences: absences,
+        // incompleteAttendance: incomplete,
+        // eventStats: event.eventStats || 'N/A'
       };
     });
   } catch (err) {

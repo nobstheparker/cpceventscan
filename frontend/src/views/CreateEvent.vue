@@ -76,12 +76,24 @@
               <ion-card-content>
                 <div class="form-row">
                   <label>Event Name</label>
-                  <ion-input v-model="eventName" required></ion-input>
+                  <ion-input
+                    v-model="eventName"
+                    required
+                    @keydown="handleEventNameKeydown"
+                    @paste="handleEventNamePaste"
+                  ></ion-input>
+
                 </div>
 
                 <div class="form-row-text">
                   <label>Event Description</label>
-                  <ion-textarea auto-grow="true"  v-model="eventDesc" required></ion-textarea>
+                  <ion-textarea
+                    auto-grow="true"
+                    v-model="eventDesc"
+                    required
+                    @keydown="handleEventDescKeydown"
+                    @paste="handleEventDescPaste"
+                  ></ion-textarea>
                 </div>
 
                 <div class="form-row">
@@ -279,19 +291,38 @@
                 <div class="form-row-acad">
                   <div>
                     <label>Note</label>
-                    <ion-textarea auto-grow="true" v-model="eventNote" required></ion-textarea>
+                   <ion-textarea
+                    auto-grow="true"
+                    v-model="eventNote"
+                    required
+                    @keydown="handleEventNoteKeydown"
+                    @paste="handleEventNotePaste"
+                  ></ion-textarea>
                   </div>
                 </div>
                 <div class="form-row-acad">
                   <div>
                     <label>Reminder</label>
-                    <ion-textarea auto-grow="true" v-model="eventReminder" required></ion-textarea>
+                    <ion-textarea
+                      auto-grow="true"
+                      v-model="eventReminder"
+                      required
+                      @keydown="handleEventReminderKeydown"
+                      @paste="handleEventReminderPaste"
+                    ></ion-textarea>
+
                   </div>
                 </div>
 
                 <div class="form-row-con">
                   <label>Call To Action Buttons Instruction</label>
-                  <ion-input v-model="ctabtn" required></ion-input>
+                  <ion-input
+                    v-model="ctabtn"
+                    required
+                    @keydown="handleCtaBtnKeydown"
+                    @paste="handleCtaBtnPaste"
+                  ></ion-input>
+
 
                   <div style="display: flex; align-items: center; gap: 150px; margin-top: 10px; margin-bottom: 15px;color: rgb(31, 30, 35);font-weight: 500;">
                     <div style="display: flex; align-items: center;">
@@ -396,6 +427,135 @@ const confirmLogout = async () => {
     }
   }
 };
+ 
+// Keydown handler specifically for eventName
+const handleEventNameKeydown = (e: KeyboardEvent) => {
+  const allowedKeys = ['Backspace', 'Delete', 'ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', 'Tab'];
+  if (allowedKeys.includes(e.key)) return;
+
+  const currentValue = eventName.value || '';
+
+  // Prevent space as first character or double spaces
+  if (e.key === ' ' || e.code === 'Space') {
+    if (currentValue.length === 0 || currentValue.endsWith(' ')) {
+      e.preventDefault();
+    }
+  }
+
+  // All other characters allowed (letters, numbers, symbols)
+};
+
+// Paste handler specifically for eventName
+const handleEventNamePaste = (e: ClipboardEvent) => {
+  e.preventDefault();
+  const pastedText = e.clipboardData?.getData('text') || '';
+  // Remove double spaces, trim leading/trailing
+  const cleanedText = pastedText.replace(/\s{2,}/g, ' ').trim();
+  eventName.value += cleanedText;
+};
+
+
+// Keydown handler specifically for eventDesc
+const handleEventDescKeydown = (e: KeyboardEvent) => {
+  const allowedKeys = ['Backspace', 'Delete', 'ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', 'Tab', 'Enter'];
+  if (allowedKeys.includes(e.key)) return;
+
+  const currentValue = eventDesc.value || '';
+
+  // Prevent space as first character or double spaces
+  if (e.key === ' ' || e.code === 'Space') {
+    if (currentValue.length === 0 || currentValue.endsWith(' ')) {
+      e.preventDefault();
+    }
+  }
+
+  // All other characters allowed
+};
+
+// Paste handler specifically for eventDesc
+const handleEventDescPaste = (e: ClipboardEvent) => {
+  e.preventDefault();
+  const pastedText = e.clipboardData?.getData('text') || '';
+  // Remove double spaces, trim leading/trailing
+  const cleanedText = pastedText.replace(/\s{2,}/g, ' ').trim();
+  eventDesc.value += cleanedText;
+};
+
+// Keydown handler for eventNote
+const handleEventNoteKeydown = (e: KeyboardEvent) => {
+  const allowedKeys = ['Backspace', 'Delete', 'ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', 'Tab', 'Enter'];
+  if (allowedKeys.includes(e.key)) return;
+
+  const currentValue = eventNote.value || '';
+
+  // Prevent space as first character or double spaces
+  if (e.key === ' ' || e.code === 'Space') {
+    if (currentValue.length === 0 || currentValue.endsWith(' ')) {
+      e.preventDefault();
+    }
+  }
+
+  // All other characters (including special characters) are allowed
+};
+
+// Paste handler for eventNote
+const handleEventNotePaste = (e: ClipboardEvent) => {
+  e.preventDefault();
+  const pastedText = e.clipboardData?.getData('text') || '';
+  const cleanedText = pastedText.replace(/\s{2,}/g, ' ').trim(); // remove double spaces and trim
+  eventNote.value += cleanedText;
+};
+
+// Keydown handler for eventReminder
+const handleEventReminderKeydown = (e: KeyboardEvent) => {
+  const allowedKeys = ['Backspace', 'Delete', 'ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', 'Tab', 'Enter'];
+  if (allowedKeys.includes(e.key)) return;
+
+  const currentValue = eventReminder.value || '';
+
+  // Prevent space as first character or double spaces
+  if (e.key === ' ' || e.code === 'Space') {
+    if (currentValue.length === 0 || currentValue.endsWith(' ')) {
+      e.preventDefault();
+    }
+  }
+
+  // All other characters (including special characters) are allowed
+};
+
+// Paste handler for eventReminder
+const handleEventReminderPaste = (e: ClipboardEvent) => {
+  e.preventDefault();
+  const pastedText = e.clipboardData?.getData('text') || '';
+  const cleanedText = pastedText.replace(/\s{2,}/g, ' ').trim(); // remove double spaces and trim
+  eventReminder.value += cleanedText;
+};
+
+// Keydown handler for ctabtn
+const handleCtaBtnKeydown = (e: KeyboardEvent) => {
+  const allowedKeys = ['Backspace', 'Delete', 'ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', 'Tab'];
+  if (allowedKeys.includes(e.key)) return;
+
+  const currentValue = ctabtn.value || '';
+
+  // Prevent space as first character or double spaces
+  if (e.key === ' ' || e.code === 'Space') {
+    if (currentValue.length === 0 || currentValue.endsWith(' ')) {
+      e.preventDefault();
+    }
+  }
+
+  // Allow all other characters including special characters
+};
+
+// Paste handler for ctabtn
+const handleCtaBtnPaste = (e: ClipboardEvent) => {
+  e.preventDefault();
+  const pastedText = e.clipboardData?.getData('text') || '';
+  const cleanedText = pastedText.replace(/\s{2,}/g, ' ').trim(); // remove double spaces and trim
+  ctabtn.value += cleanedText;
+};
+
 
 // --- Sidebar Menus ---
 const showStudentMenu = ref(false);

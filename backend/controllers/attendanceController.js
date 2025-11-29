@@ -159,6 +159,7 @@ exports.settleAttendance = async (req, res) => {
     res.status(500).json({ error: err.message });
   }
 };
+
 exports.getAttendanceControls = async (req, res) => {
   try {
     const [records] = await attendanceModel.getAllAttendanceControls();
@@ -342,5 +343,7 @@ exports.markTriviaMissed = async (req, res) => {
     res.status(500).json({ error: err.message });
   }
 };
+
+
 
 

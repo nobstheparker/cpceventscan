@@ -124,7 +124,22 @@
               <div class="modal-body">
                 <ion-item>
                   <ion-label position="floating">Year Level</ion-label>
-                  <ion-input v-model="newYearLvl" />
+                  <ion-input
+                    v-model="newYearLvl"
+                    maxlength="1"
+                    placeholder="Enter year level (1-4)"
+                    @keydown="(e) => {
+                      const allowedKeys = ['Backspace','Tab','Enter','ArrowLeft','ArrowRight','ArrowUp','ArrowDown','Delete','Home','End'];
+                      if (allowedKeys.includes(e.key)) return;
+
+                      // Only allow numbers 1-4
+                      if (!/^[1-4]$/.test(e.key)) e.preventDefault();
+                    }"
+                    @paste="(e) => {
+                      e.preventDefault(); // prevent pasting
+                    }"
+                  />
+
                 </ion-item>
               </div>
               <div class="modal-footer">

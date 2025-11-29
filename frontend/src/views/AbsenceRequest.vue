@@ -18,9 +18,9 @@
           </ion-toolbar>
 
           <div class="form-box">
-            <h2 class="volunter-note">
+            <h2 class="volunter-note" style="margin-top: 0 !important;">
               INSTRUCTIONS:
-              <small>Please fill out this form to request an absence for a school event.</small>
+              <small style="font-weight: 600;">Please fill out this form to request an absence for a school event.</small>
             </h2>
 
             <!-- Event Name -->
@@ -32,13 +32,38 @@
             <!-- Event Date -->
             <ion-item>
               <ion-label position="stacked">Date of Event:</ion-label>
-              <ion-input type="date" :value="eventDate" readonly></ion-input>
+              <ion-input type="date" :value="eventDate" disabled></ion-input>
             </ion-item>
 
             <!-- Reason for Absence -->
             <ion-item>
               <ion-label position="stacked">Reason for Absence:</ion-label>
-              <ion-input v-model="reason" placeholder="Enter here"></ion-input>
+              <ion-input
+                v-model="reason"
+                placeholder="Enter here"
+                @keydown="(e) => {
+                  const allowedKeys = [
+                    'Backspace','Tab','Enter','ArrowLeft','ArrowRight','ArrowUp','ArrowDown','Delete','Home','End'
+                  ];
+
+                  // Allow navigation keys
+                  if (allowedKeys.includes(e.key)) return;
+
+                  // BLOCK space if input is empty or first character
+                  if (e.key === ' ') {
+                    if (!reason || reason.length === 0) {
+                      e.preventDefault();
+                      return;
+                    }
+                    return; // allow space only after the first character
+                  }
+
+                  // Allow only letters A–Z and a–z
+                  if (!/^[a-zA-Z]$/.test(e.key)) {
+                    e.preventDefault();
+                  }
+                }"
+              />
             </ion-item>
 
             <!-- Upload Documentation -->
@@ -48,20 +73,76 @@
               <input type="file" ref="fileInput" hidden @change="onFileSelected" accept="image/*,.pdf,.doc,.docx" />
             </ion-item>
 
-            <ion-text v-if="selectedFileName">
+            <ion-text v-if="selectedFileName" style=" margin: 0 !important ;">
               <small>Selected: {{ selectedFileName }}</small>
             </ion-text>
 
             <!-- Parent/Guardian Name -->
-            <ion-item>
-              <ion-label position="stacked">Full Name of Parent/Guardian:</ion-label>
-              <ion-input v-model="parentName" placeholder="Enter here"></ion-input>
-            </ion-item>
+           <ion-item>
+            <ion-label position="stacked">Full Name of Parent/Guardian:</ion-label>
+              <ion-input
+                v-model="parentName"
+                placeholder="Enter here"
+                @keydown="(e) => {
+                  const allowedKeys = [
+                    'Backspace','Tab','Enter','ArrowLeft','ArrowRight','ArrowUp','ArrowDown','Delete','Home','End'
+                  ];
+
+                  // Allow navigation keys
+                  if (allowedKeys.includes(e.key)) return;
+
+                  // BLOCK space if input is empty or first character
+                  if (e.key === ' ') {
+                    if (!parentName || parentName.length === 0) {
+                      e.preventDefault();
+                      return;
+                    }
+                    return; // allow space only after the first character
+                  }
+
+                  // Allow only letters A–Z and a–z
+                  if (!/^[a-zA-Z]$/.test(e.key)) {
+                    e.preventDefault();
+                  }
+                }"
+              />
+          </ion-item>
 
             <!-- Contact Info -->
             <ion-item>
               <ion-label position="stacked">Contact Information:</ion-label>
-              <ion-input v-model="contactInfo" placeholder="Enter here"></ion-input>
+              <ion-input
+                v-model="contactInfo"
+                placeholder="Enter here"
+                type="tel"
+                @keydown="(e) => {
+                  const allowedKeys = [
+                    'Backspace','Enter','ArrowLeft','ArrowRight','ArrowUp','ArrowDown','Delete','Home','End'
+                  ];
+
+                  // Allow navigation keys
+                  if (allowedKeys.includes(e.key)) return;
+
+                  // Prevent typing beyond 11 characters
+                  if (contactInfo && contactInfo.length >= 11) {
+                    e.preventDefault();
+                    return;
+                  }
+
+                  // Prevent space as first character or when empty
+                  if (e.key === ' ') {
+                    if (!contactInfo || contactInfo.length === 0) {
+                      e.preventDefault();
+                      return;
+                    }
+                  }
+
+                  // Allow only digits
+                  if (!/^[0-9]$/.test(e.key)) {
+                    e.preventDefault();
+                  }
+                }"
+              />
             </ion-item>
 
             <!-- Agreement -->
@@ -131,6 +212,7 @@ if (rawDate) {
   const dateObj = new Date(rawDate);
   eventDate.value = dateObj.toISOString().split('T')[0];
 }
+
 
 const fullName = ref('');
 const department = ref('');
@@ -257,12 +339,14 @@ ion-content {
   width: 100%;
 }
 .form-container ion-input {
-    color: #fff;
+    color: black;
     min-height: auto;
     border-radius: 0;
+    font-size: 12px;
+    border-radius: 3px;
 }
 .form-container ion-label {
-    margin-bottom: 10px;
+    margin-bottom: 5px;
 }
 .form-container ::v-deep(.native-wrapper) {
     height: 100%;
@@ -289,7 +373,6 @@ ion-item {
   --highlight-color-focused: #07055D;
   --background: #fff;
   border-radius: 8px;
-  margin-bottom: 16px;
   --inner-border-width: 0;
 }
 
@@ -454,5 +537,8 @@ ion-item.agreement ion-label{
 }
 ion-button.file-btn::part(native) {
   background-color: #08055e;
+}
+.form-container.input-disabled.sc-ion-input-md-h {
+    opacity: 1.38 !important;
 }
 </style>

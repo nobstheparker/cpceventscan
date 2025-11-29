@@ -145,27 +145,37 @@
 
               <div style="padding:8px 15px; background:#D9D9D9;">
                 <label><b>Time Period:</b></label>
-                <select v-model="trivia.time_period"
+                <select v-model="trivia.time_period" required
                   style="width:100%; padding:6px; margin-bottom:8px; border:1px solid #b1b1b2; border-radius:4px; background-color:white; color:black;">
-                  <option value="">Select Period</option>
+                  <option value="" disabled>Select Period</option>
                   <option value="morning">Morning</option>
                   <option value="afternoon">Afternoon</option>
                 </select>
 
                 <label><b>Question:</b></label>
-                <input v-model="trivia.question" placeholder="Enter question"
-                  style="width:100%; padding:6px; margin-bottom:8px; border:1px solid #b1b1b2; border-radius:4px; background-color:white; color:black;" />
+                <input
+                  v-model="trivia.question"
+                  placeholder="Enter question"
+                  style="width:100%; padding:6px; margin-bottom:8px; border:1px solid #b1b1b2; border-radius:4px; background-color:white; color:black;"
+                  @keydown="handleQuestionKeydown"
+                  @paste="handleQuestionPaste"
+                />
 
                 <div v-for="(opt, index) in trivia.options" :key="index">
                   <label style="font-weight: 700;">Option {{ index+1 }}:</label>
-                  <input v-model="trivia.options[index]" placeholder="Enter option"
-                    style="width:100%; padding:6px; margin-bottom:5px; border:1px solid #b1b1b2; border-radius:4px; background-color:white; color:black;" />
+                  <input
+                    v-model="trivia.options[index]"
+                    placeholder="Enter option"
+                    style="width:100%; padding:6px; margin-bottom:5px; border:1px solid #b1b1b2; border-radius:4px; background-color:white; color:black;"
+                    @keydown="(e) => handleInputKeydown(e, index, true)"
+                    @paste="(e) => handleInputPaste(e, index, true)"
+                  />
                 </div>
 
                 <label><b>Correct Answer:</b></label>
-                <select v-model="trivia.correct"
+                <select v-model="trivia.correct" required
                   style="width:100%; padding:6px; border:1px solid #b1b1b2; border-radius:4px; background-color:white; color:black;">
-                  <option value="">Select correct answer</option>
+                  <option value="" disabled>Select correct answer</option>
                   <option v-for="opt in trivia.options" :key="opt" :value="opt">{{ opt }}</option>
                 </select>
 
@@ -278,6 +288,62 @@ const confirmLogout = async () => {
     }
   }
 };
+const handleQuestionKeydown = (e: KeyboardEvent) => {
+  const allowedKeys = ['Backspace', 'Delete', 'ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', 'Tab'];
+
+  if (allowedKeys.includes(e.key)) return;
+
+  const currentValue = trivia.value.question || '';
+
+  // Handle space
+  if (e.key === ' ' || e.code === 'Space') {
+    if (currentValue.length === 0 || currentValue.endsWith(' ')) {
+      e.preventDefault(); // prevent first char space or double space
+    }
+    return; // allow single space after a character
+  }
+
+  // Allow all other characters
+  // Nothing to block here
+};
+
+const handleQuestionPaste = (e: ClipboardEvent) => {
+  e.preventDefault();
+  const pastedText = e.clipboardData?.getData('text') || '';
+  const currentValue = trivia.value.question || '';
+  // Remove double spaces but keep all special characters
+  const cleanedText = pastedText.replace(/\s{2,}/g, ' ').trim();
+  trivia.value.question = currentValue + cleanedText;
+};
+
+
+const handleInputKeydown = (e: KeyboardEvent, index: number, isOption = false) => {
+  const allowedKeys = ['Backspace', 'Delete', 'ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', 'Tab'];
+  if (allowedKeys.includes(e.key)) return;
+
+  const currentValue = isOption ? trivia.value.options[index] || '' : '';
+
+  // Prevent first-character space or double space
+  if (e.key === ' ' || e.code === 'Space') {
+    if (currentValue.length === 0 || currentValue.endsWith(' ')) {
+      e.preventDefault();
+    }
+    return; // allow single space after first character
+  }
+
+  // All other characters allowed
+};
+
+// Paste handler for option inputs
+const handleInputPaste = (e: ClipboardEvent, index: number, isOption = false) => {
+  e.preventDefault();
+  const pastedText = e.clipboardData?.getData('text') || '';
+  const cleanedText = pastedText.replace(/\s{2,}/g, ' ').trim();
+
+  if (isOption) {
+    trivia.value.options[index] += cleanedText;
+  }
+};
 
 // Sidebar toggles
 const showStudentMenu = ref(false);
@@ -303,6 +369,7 @@ interface AttendanceControl {
 }
 
 const attendanceControls = ref<AttendanceControl[]>([]);
+
 const filteredData = computed(() => {
   let result = Array.isArray(attendanceControls.value) ? [...attendanceControls.value] : [];
   if (searchQuery.value) {
@@ -786,7 +853,7 @@ ion-modal::part(backdrop) {
   width: auto !important;
   justify-content: center;
   border: 1px solid #07055d;
-  padding: 12px;
+  padding: 25px 10px;
 }
 .action-btn ion-button {
   width: 250px;

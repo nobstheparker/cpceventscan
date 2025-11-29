@@ -143,7 +143,34 @@
                   <ion-input
                     v-model="modalData.section_name"
                     ref="sectionInput"
-                  ></ion-input>
+                    @keydown="(e) => {
+                      const allowedKeys = ['Backspace','Tab','Enter','ArrowLeft','ArrowRight','ArrowUp','ArrowDown','Delete','Home','End'];
+                      const currentValue = modalData.section_name || '';
+
+                      // Allow navigation keys
+                      if (allowedKeys.includes(e.key)) return;
+
+                      // Prevent space as first character or double spaces
+                      if (e.key === ' ' || e.code === 'Space') {
+                        if (currentValue.length === 0 || currentValue.endsWith(' ')) {
+                          e.preventDefault();
+                          return;
+                        }
+                        return; // allow single space
+                      }
+
+                      // Allow letters only
+                      if (!/^[a-zA-Z]$/.test(e.key)) e.preventDefault();
+                    }"
+                    @paste="(e) => {
+                      e.preventDefault();
+                      const pastedText = e.clipboardData?.getData('text') || '';
+                      // remove double spaces and trim
+                      const cleaned = pastedText.replace(/\s{2,}/g, ' ').trim();
+                      modalData.section_name += cleaned;
+                    }"
+                  />
+
                 </ion-item>
               </div>
               <div class="modal-footer">

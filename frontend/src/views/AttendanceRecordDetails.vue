@@ -72,6 +72,7 @@
                   <th>Event Name</th>
                   <th>Date</th>
                   <th>Total Attendees</th>
+                  <th>Total Absences</th>
                   <th>Incomplete Attendance</th>
                   <th>Feedbacks</th>
                   <th>Event Status</th>
@@ -85,6 +86,7 @@
                   <td>{{ eventName }}</td>
                   <td>{{ eventDate }}</td>
                   <td>{{ totalAttendees }}</td>
+                  <td>{{ totalAbsences }}</td>
                   <td>{{ incompleteAttendance }}</td>
                   <td>{{ feedbacks }}</td>
                   <td>
@@ -118,7 +120,7 @@
                   <th class="break">Mid-Event Check (PM)</th>
                   <th>Time Out (PM)</th>
                   <th>AR</th>
-                  <th >Attendance Status</th>
+                  <th >Status</th>
                   <th>Actions</th>
                 </tr>
               </thead>
@@ -285,6 +287,7 @@ interface AttendanceDetail {
   end_date_time?: string;
   event_name?: string;
   absenceReqStatus: string | null;
+  feedbackCount?: number;
 }
 
 const attendanceDetails = ref<AttendanceDetail[]>([]);
@@ -338,7 +341,6 @@ const fetchAttendanceDetails = async () => {
       let remarks = d.remarks || "";
       let attendanceStats = d.attendanceStats || "Unsettled";
 
-      // ✅ FIXED ATTENDANCE LOGIC
       const validAM =
         timeIn && midEventcheck && midEventcheck !== "Missed" && timeOut;
       const validPM =
@@ -349,7 +351,6 @@ const fetchAttendanceDetails = async () => {
       const allComplete = validAM && validPM;
 
       if (Number(d.canSettle ?? 0) === 0) {
-        // ✅ Settled record — highest priority
         remarks = "";
         attendanceStats = "Settled";
       } else if (d.absenceReqStatus === "Approved") {
@@ -384,6 +385,7 @@ const fetchAttendanceDetails = async () => {
         end_date_time: d.end_date_time,
         event_name: d.event_name,
         absenceReqStatus: d.absenceReqStatus,
+        feedbackCount: Number(d.feedbackCount ?? 0),
       } as AttendanceDetail;
     });
 
@@ -395,39 +397,55 @@ const fetchAttendanceDetails = async () => {
       const start = parseDateSafe(first.start_date_time);
       const end = parseDateSafe(first.end_date_time);
       const now = new Date();
-      const dateOptions = {
-        month: "short",
-        day: "numeric",
-        year: "numeric",
-      };
-      const timeOptions = {
-        hour: "2-digit",
-        minute: "2-digit",
-        hour12: true,
-        timeZone: "Asia/Manila",
-      };
 
+      // Event date string
       if (start && end) {
-        const startDate = start.toLocaleDateString("en-PH", dateOptions);
-        const startTime = start.toLocaleTimeString("en-PH", timeOptions);
-        const endDate = end.toLocaleDateString("en-PH", dateOptions);
-        const endTime = end.toLocaleTimeString("en-PH", timeOptions);
-        eventDate.value =
-          startDate === endDate
-            ? `${startDate} — ${startTime} to ${endTime}`
-            : `${startDate} ${startTime} — ${endDate} ${endTime}`;
-        eventStats.value =
-          now < start ? "Upcoming" : now <= end ? "Ongoing" : "Done";
+        const options: Intl.DateTimeFormatOptions = {
+          year: "numeric",
+          month: "long",
+          day: "numeric",
+        };
+        eventDate.value = `${start.toLocaleDateString(undefined, options)}${
+          start.getTime() !== end.getTime()
+            ? ` - ${end.toLocaleDateString(undefined, options)}`
+            : ""
+        }`;
       }
 
+      // Event status
+      if (start && end) {
+        if (now < start) eventStats.value = "Upcoming";
+        else if (now >= start && now <= end) eventStats.value = "Ongoing";
+        else eventStats.value = "Done";
+      }
+
+      // Total attendees
       totalAttendees.value = attendanceDetails.value.length;
+
+      // Incomplete
+      incompleteAttendance.value = attendanceDetails.value.filter((r) => {
+        if (r.attendanceStats === "Settled" || r.attendanceStats === "Excused") return false;
+
+        const validAM = r.timeIn && r.midEventcheck && r.midEventcheck !== "Missed" && r.timeOut;
+        const validPM =
+          r.afternoontimeIn &&
+          r.afternoonmidEventcheck &&
+          r.afternoonmidEventcheck !== "Missed" &&
+          r.afternoontimeOut;
+
+        return !(validAM && validPM);
+      }).length;
+
+      // Absences
       totalAbsences.value = attendanceDetails.value.filter(
-        (r) => r.remarks === "Missed"
+        (r) => r.absenceReqStatus === "Approved"
       ).length;
-      incompleteAttendance.value = attendanceDetails.value.filter(
-        (r) => r.remarks === "Incomplete"
-      ).length;
-      feedbacks.value = 0;
+
+      // Feedbacks
+      feedbacks.value = attendanceDetails.value.reduce(
+        (acc, r) => acc + (r.feedbackCount ?? 0),
+        0
+      );
     }
   } catch (err) {
     console.error(err);
@@ -592,6 +610,7 @@ const exportData = () => {
         "Mid-Event (PM)",
         "Time Out (PM)",
         "AR",
+        "Feedbacks",
         "Status",
       ],
     ],
@@ -605,6 +624,7 @@ const exportData = () => {
       d.afternoonmidEventcheck,
       d.afternoontimeOut,
       d.absenceReqStatus,
+      d.feedbackCount,
       d.attendanceStats,
     ]),
     styles: { fontSize: 9 },
@@ -688,7 +708,6 @@ function getEventStyle(status: string | null) {
   return {};
 }
 </script>
-
 
 <style scoped>
 .toolbar-container::part(backdrop) {

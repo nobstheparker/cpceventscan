@@ -46,8 +46,6 @@
                 <tr>
                   <th>Event Name</th>
                   <th>Date</th>
-                  <th>Time In</th>
-                  <th>Time Out</th>
                   <th>Remarks</th>
                   <th>Status</th>
                 </tr>
@@ -56,8 +54,6 @@
                 <tr v-for="row in eventLogs" :key="row.attendance_id">
                   <td>{{ row.eventName }}</td>
                   <td>{{ row.date }}</td>
-                  <td>{{ formatTime(row.timeIn) }}</td>
-                  <td>{{ formatTime(row.timeOut) }}</td>
                   <td>{{ row.remarks }}</td>
                   <td>
                     <span
@@ -139,6 +135,7 @@ const initDataTable = () => {
   });
 };
 
+
 // ✅ Fetch attendance
 onMounted(async () => {
   try {
@@ -153,11 +150,13 @@ onMounted(async () => {
 
     eventLogs.value = response.data.map((r) => {
       let remarks = r.remarks || "";
-      let status = r.status === 1 ? "Cleared" : "Unsettled";
+      let status = r.status ? "Cleared" : "Unsettled";
 
+      // ✅ Map status based on your SQL query result
+      
       const now = new Date();
 
-      // Parse event date (like "Sep 29, 2025")
+      // Parse event date
       const eventDate = r.date ? new Date(r.date) : null;
 
       // Consider event ended if today is after the event date
@@ -166,13 +165,13 @@ onMounted(async () => {
       if (r.timeIn && r.timeOut) {
         // ✅ Fully attended
         remarks = "Present";
-        status = "Cleared";
+        // Don't override status - backend already calculated it
         attended++;
       } 
       else if (r.timeIn || r.timeOut) {
         // ✅ Partial attendance
         remarks = "Incomplete";
-        status = "Unsettled";
+        // Don't override status - backend already calculated it
         attended++;
 
         if (eventEnded) {
@@ -182,8 +181,8 @@ onMounted(async () => {
       else if (!r.timeIn && !r.timeOut) {
         // ❌ Absent
         remarks = "Absent";
-        status = "Unsettled";
-
+        // Don't override status - backend already calculated it
+        
         if (eventEnded) {
           missed++;
         }
@@ -199,6 +198,8 @@ onMounted(async () => {
     console.error("Error fetching attendance:", err);
   }
 });
+
+
 
 watch(eventLogs, (newVal) => {
   if (newVal.length > 0) {

@@ -29,7 +29,7 @@
 
           <!-- Motivation -->
           <ion-label class="radio-label">What motivates you to volunteer with us?</ion-label>
-          <ion-radio-group v-model="motivation">
+          <ion-radio-group v-model="motivation" >
             <div class="two-column-container">
               <ion-item>
                 <ion-label>Gaining experience</ion-label>
@@ -50,15 +50,31 @@
             </div>
           </ion-radio-group>
 
-          <!-- Motivation Other input -->
+          <!-- Motivation Other input
           <ion-item v-if="motivation === 'Other'">
             <ion-label position="stacked">If other, elaborate your interest below.</ion-label>
-            <ion-input v-model="motivationOther" placeholder="Enter here"></ion-input>
+            <ion-input
+              v-model="motivationOther"
+              placeholder="Enter here"
+              @keydown="(e) => handleInputKeydown(e, motivationOther)"
+              @paste="(e) => handleInputPaste(e, motivationOther)"
+            />
+          </ion-item> -->
+
+                    <!-- Motivation Other input -->
+          <ion-item v-if="motivation === 'Other'">
+            <ion-label position="stacked">If other, elaborate your interest below.</ion-label>
+            <ion-input
+              v-model="motivationOther"
+              placeholder="Enter here"
+              @keydown="handleInputKeydown"
+              @paste="handleInputPaste"
+            />
           </ion-item>
 
           <!-- Volunteered Before -->
           <ion-label class="radio-label">Have you volunteered at school events before?</ion-label>
-          <ion-radio-group v-model="volunteeredBefore">
+          <ion-radio-group v-model="volunteeredBefore" required>
             <div class="two-column-container">
               <ion-item>
                 <ion-label>Yes</ion-label>
@@ -74,12 +90,17 @@
           <!-- Past Role input -->
           <ion-item v-if="volunteeredBefore === 'Yes'">
             <ion-label position="stacked">If yes, please describe your role and contributions.</ion-label>
-            <ion-input v-model="volunteerRole" placeholder="Enter here"></ion-input>
+            <ion-input
+              v-model="volunteerRole"
+              placeholder="Enter here"
+              @keydown="handleInputKeydown"
+              @paste="handleInputPaste"
+            />
           </ion-item>
 
           <!-- Skills -->
           <ion-label class="radio-label">Which skills do you bring to this role?</ion-label>
-          <ion-radio-group v-model="skills">
+          <ion-radio-group v-model="skills" required>
             <div class="two-column-container">
               <ion-item>
                 <ion-label>Event planning</ion-label>
@@ -103,12 +124,17 @@
           <!-- Skills Other input -->
           <ion-item v-if="skills === 'Other'">
             <ion-label position="stacked">If other, state your skill and provide an example.</ion-label>
-            <ion-input v-model="skillsOther" placeholder="Enter here"></ion-input>
+            <ion-input
+              v-model="skillsOther"
+              placeholder="Enter here"
+              @keydown="handleInputKeydown"
+              @paste="handleInputPaste"
+            />
           </ion-item>
 
           <!-- Availability -->
           <ion-label class="radio-label">Are you available to volunteer for the entire duration of the event?</ion-label>
-          <ion-radio-group v-model="available">
+          <ion-radio-group v-model="available" required>
             <div class="two-column-container">
               <ion-item>
                 <ion-label>Yes</ion-label>
@@ -122,8 +148,8 @@
           </ion-radio-group>
 
           <!-- Team Preference -->
-          <ion-label class="radio-label">How do you prefer to contribute to a team?</ion-label>
-          <ion-radio-group v-model="team_preference">
+          <ion-label class="radio-label" required>How do you prefer to contribute to a team?</ion-label>
+          <ion-radio-group v-model="team_preference" required>
             <div class="two-column-container">
               <ion-item>
                 <ion-label>Leader</ion-label>
@@ -144,27 +170,35 @@
             </div>
           </ion-radio-group>
 
-          <!-- Team Other input -->
-          <ion-item v-if="team_preference === 'Other'">
-            <ion-label position="stacked">If other, state your skill and provide an example.</ion-label>
-            <ion-input v-model="teamOther" placeholder="Enter here"></ion-input>
-          </ion-item>
+        <!-- Team Other input -->
+        <ion-item v-if="team_preference === 'Other'">
+          <ion-label position="stacked">If other, state your preference and provide an example.</ion-label>
+          <ion-input
+            v-model="teamOther"
+            placeholder="Enter here"
+            @keydown="handleInputKeydown"
+            @paste="handleInputPaste"
+          />
+        </ion-item>
 
-          <!-- Agreement -->
-          <h2 class="volunter-note">Volunteer Agreement Note:</h2>
-          <small>
-            By submitting this application, I acknowledge that I understand the commitment required for the volunteer role and agree to fulfill my responsibilities.
-          </small>
-
-          <ion-item lines="none" class="agreement">
-            <ion-checkbox slot="start" v-model="agreementChecked"></ion-checkbox>
-            <ion-label class="checkbox-label">
+        <ion-item lines="none" class="agreement">
+          <ion-checkbox slot="start" v-model="agreementChecked"></ion-checkbox>
+          <ion-label class="checkbox-label">
+            <span>
               I agree to the terms of commitment and understand the consequences of non-compliance with my volunteer responsibilities.
-            </ion-label>
-          </ion-item>
+            </span>
+          </ion-label>
+        </ion-item>
 
-          <!-- Submit Button -->
-          <ion-button expand="block" class="login-button" @click="submitForm">Submit</ion-button>
+        <h2 class="volunter-note">Volunteer Agreement Note:</h2>
+        <small>
+          <span>
+            By submitting this application, I acknowledge that I understand the commitment required for the volunteer role and agree to fulfill my responsibilities.
+          </span>
+        </small>
+
+        <ion-button expand="block" class="login-button" @click="submitForm()">Submit </ion-button>
+
         </div>
 
         <div class="footer-bottom"></div>
@@ -236,7 +270,203 @@ const team_preference = ref('');
 const teamOther = ref('');
 const agreementChecked = ref(false);
 
+
+// const submitForm = async () => {
+//   // Check agreement first
+//   if (!agreementChecked.value) {
+//     Swal.fire({
+//       icon: 'warning',
+//       title: 'Agreement Required',
+//       text: 'You must agree to the volunteer commitment note to proceed.',
+//       didOpen: () => {
+//         document.body.classList.remove('swal2-height-auto');
+//         document.documentElement.classList.remove('swal2-height-auto');
+//       }
+//     });
+//     return;
+//   }
+
+//   // Check all main radio groups at once
+//   if (!motivation.value || !volunteeredBefore.value || !skills.value || !available.value || !team_preference.value) {
+//     Swal.fire({
+//       icon: 'warning',
+//       title: 'Missing Field(s)',
+//       text: 'Please answer all the required radio button questions before submitting.',
+//       didOpen: () => {
+//         document.body.classList.remove('swal2-height-auto');
+//         document.documentElement.classList.remove('swal2-height-auto');
+//       }
+//     });
+//     return;
+//   }
+
+//   // Merge all conditional text inputs into one check
+//   const missingConditionalFields =
+//     (motivation.value === 'Other' && (!motivationOther.value || motivationOther.value.trim() === '')) ||
+//     (volunteeredBefore.value === 'Yes' && (!volunteerRole.value || volunteerRole.value.trim() === '')) ||
+//     (skills.value === 'Other' && (!skillsOther.value || skillsOther.value.trim() === '')) ||
+//     (team_preference.value === 'Other' && (!teamOther.value || teamOther.value.trim() === ''));
+
+//   if (missingConditionalFields) {
+//     Swal.fire({
+//       icon: 'warning',
+//       title: 'Missing Field(s)',
+//       text: 'Please fill out all the additional details for "Other" or "Yes" selections before submitting.',
+//       didOpen: () => {
+//         document.body.classList.remove('swal2-height-auto');
+//         document.documentElement.classList.remove('swal2-height-auto');
+//       }
+//     });
+//     return;
+//   }
+
+//   // All validations passed
+//   console.log('Form is valid. Submitting...');
+//   // Add your submission logic here
+// };
+
+// // Reusable keydown handler
+// const handleTextInputKeydown = (e: KeyboardEvent, modelRef: typeof motivationOther) => {
+//   const allowedKeys = ['Backspace', 'ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown'];
+
+//   // Allow navigation and backspace
+//   if (allowedKeys.includes(e.key)) return;
+
+//   // Prevent space as first character, when empty, or double space
+//   if (e.key === ' ') {
+//     if (!modelRef.value || modelRef.value.length === 0) {
+//       e.preventDefault();
+//       return;
+//     }
+//     if (modelRef.value.slice(-1) === ' ') {
+//       e.preventDefault();
+//       return;
+//     }
+//     return; // allow single space after first character
+//   }
+
+//   // Allow letters and numbers only
+//   if (!/^[a-zA-Z0-9]$/.test(e.key)) {
+//     e.preventDefault();
+//   }
+// }
+
+//   const payload = {
+//     event_id: eventId.value,   
+//     role: role.value,
+//     motivation: motivation.value,
+//     motivationOther: motivationOther.value,
+//     volunteeredBefore: volunteeredBefore.value,
+//     pastRole: volunteerRole.value,
+//     skills: skills.value,
+//     skillsOther: skillsOther.value,
+//     available: available.value,
+//     team_preference: team_preference.value,
+//     teamOther: teamOther.value,
+//     agreement: agreementChecked.value ? 1 : 0
+//   };
+
+//   try {
+//     const response = await axios.post('http://localhost:5000/api/volunteers/apply', payload, {
+//       withCredentials: true
+//     });
+
+//     Swal.fire({
+//       icon: 'success',
+//       title: 'Submitted',
+//       text: response.data.message || 'Application submitted successfully!',
+//       didOpen: () => {
+//         document.body.classList.remove('swal2-height-auto');
+//         document.documentElement.classList.remove('swal2-height-auto');
+//       }
+//     }).then(() => {
+//       role.value = '';
+//       motivation.value = '';
+//       motivationOther.value = '';
+//       volunteeredBefore.value = '';
+//       volunteerRole.value = '';
+//       skills.value = '';
+//       skillsOther.value = '';
+//       available.value = '';
+//       team_preference.value = '';
+//       teamOther.value = '';
+//       agreementChecked.value = false;
+//     });
+//   } catch (error) {
+//     Swal.fire({
+//       icon: 'error',
+//       title: 'Error',
+//       text: error.response?.data?.message || 'Failed to submit application',
+//       didOpen: () => {
+//         document.body.classList.remove('swal2-height-auto');
+//         document.documentElement.classList.remove('swal2-height-auto');
+//       }
+//     });
+//   }
+
+// Unified input validation handler - prevents double spaces and invalid characters
+// Input validation handler - prevents double spaces and invalid characters
+const handleInputKeydown = (e: any) => {
+  const allowedKeys = ['Backspace', 'Delete', 'ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', 'Tab'];
+
+  // Allow navigation keys
+  if (allowedKeys.includes(e.key)) return;
+
+  // Get current value from the actual input element
+  const input = e.target.closest('ion-input');
+  if (!input) return;
+  
+  const currentValue = String(input.value || '');
+
+  // Handle space key
+  if (e.key === ' ' || e.code === 'Space') {
+    // Block space if field is empty (no leading spaces)
+    if (currentValue.length === 0) {
+      e.preventDefault();
+      return;
+    }
+    // Block double space (if last character is already a space)
+    if (currentValue.charAt(currentValue.length - 1) === ' ') {
+      e.preventDefault();
+      return;
+    }
+    // Allow single space after any character
+    return;
+  }
+
+  // Allow only letters, numbers, and common punctuation
+  if (!/^[a-zA-Z0-9.,!?;:()\-']$/.test(e.key)) {
+    e.preventDefault();
+  }
+};
+
+// Paste handler to prevent double spaces in pasted content
+const handleInputPaste = (e: any) => {
+  e.preventDefault();
+  const pastedText = e.clipboardData?.getData('text') || '';
+  
+  // Clean the pasted text: remove multiple spaces and trim
+  const cleanedText = pastedText.replace(/\s{2,}/g, ' ').trim();
+  
+  // Get the ion-input element
+  const input = e.target.closest('ion-input');
+  if (!input) return;
+  
+  const currentValue = String(input.value || '');
+  
+  // Check if we need a space before the pasted content
+  const needsSpace = currentValue.length > 0 && !currentValue.endsWith(' ') && cleanedText.length > 0;
+  
+  // Set the new value
+  const newValue = currentValue + (needsSpace ? ' ' : '') + cleanedText;
+  input.value = newValue;
+  
+  // Manually trigger input event to update v-model
+  input.dispatchEvent(new CustomEvent('ionInput', { detail: { value: newValue } }));
+};
+
 const submitForm = async () => {
+  // Check agreement first
   if (!agreementChecked.value) {
     Swal.fire({
       icon: 'warning',
@@ -250,18 +480,64 @@ const submitForm = async () => {
     return;
   }
 
+  // Check role selection
+  if (!role.value) {
+    Swal.fire({
+      icon: 'warning',
+      title: 'Missing Field',
+      text: 'Please select a role before submitting.',
+      didOpen: () => {
+        document.body.classList.remove('swal2-height-auto');
+        document.documentElement.classList.remove('swal2-height-auto');
+      }
+    });
+    return;
+  }
+
+  // Check all main radio groups
+  if (!motivation.value || !volunteeredBefore.value || !skills.value || !available.value || !team_preference.value) {
+    Swal.fire({
+      icon: 'warning',
+      title: 'Missing Field(s)',
+      text: 'Please answer all the required questions before submitting.',
+      didOpen: () => {
+        document.body.classList.remove('swal2-height-auto');
+        document.documentElement.classList.remove('swal2-height-auto');
+      }
+    });
+    return;
+  }
+
+  // Check conditional text inputs
+  const missingConditionalFields =
+    (motivation.value === 'Other' && (!motivationOther.value || motivationOther.value.trim() === '')) ||
+    (volunteeredBefore.value === 'Yes' && (!volunteerRole.value || volunteerRole.value.trim() === '')) ||
+    (skills.value === 'Other' && (!skillsOther.value || skillsOther.value.trim() === '')) ||
+    (team_preference.value === 'Other' && (!teamOther.value || teamOther.value.trim() === ''));
+
+  if (missingConditionalFields) {
+    Swal.fire({
+      icon: 'warning',
+      title: 'Missing Field(s)',
+      text: 'Please fill out all the additional details for "Other" or "Yes" selections before submitting.',
+      didOpen: () => {
+        document.body.classList.remove('swal2-height-auto');
+        document.documentElement.classList.remove('swal2-height-auto');
+      }
+    });
+    return;
+  }
+
+  // Prepare payload
   const payload = {
     event_id: eventId.value,   
     role: role.value,
-    motivation: motivation.value,
-    motivationOther: motivationOther.value,
+    motivation: motivation.value === 'Other' ? motivationOther.value.trim() : motivation.value,
     volunteeredBefore: volunteeredBefore.value,
-    pastRole: volunteerRole.value,
-    skills: skills.value,
-    skillsOther: skillsOther.value,
+    pastRole: volunteerRole.value ? volunteerRole.value.trim() : '',
+    skills: skills.value === 'Other' ? skillsOther.value.trim() : skills.value,
     available: available.value,
-    team_preference: team_preference.value,
-    teamOther: teamOther.value,
+    team_preference: team_preference.value === 'Other' ? teamOther.value.trim() : team_preference.value,
     agreement: agreementChecked.value ? 1 : 0
   };
 
@@ -279,6 +555,7 @@ const submitForm = async () => {
         document.documentElement.classList.remove('swal2-height-auto');
       }
     }).then(() => {
+      // Reset form
       role.value = '';
       motivation.value = '';
       motivationOther.value = '';
@@ -331,7 +608,7 @@ ion-content {
   width: 100%;
 }
 .form-container ion-input {
-    color: #fff;
+    color: #040404;
     min-height: auto;
     border-radius: 0;
 }

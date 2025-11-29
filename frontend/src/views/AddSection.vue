@@ -76,7 +76,35 @@
               <ion-card-content>
                 <div class="form-row">
                   <label>Section</label>
-                  <ion-input v-model="sec" required></ion-input>
+                  <ion-input
+                    v-model="sec"
+                    required
+                    @keydown="(e) => {
+                      const allowedKeys = ['Backspace', 'ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown'];
+
+                      // Allow navigation keys and backspace
+                      if (allowedKeys.includes(e.key)) return;
+
+                      // Prevent space as first character, when empty, or double space
+                      if (e.key === ' ') {
+                        if (!sec || sec.length === 0) {
+                          e.preventDefault();
+                          return;
+                        }
+                        const lastChar = sec.slice(-1);
+                        if (lastChar === ' ') {
+                          e.preventDefault();
+                          return;
+                        }
+                        return; // allow single space after first character
+                      }
+
+                      // Allow only letters A-Z and a-z
+                      if (!/^[a-zA-Z]$/.test(e.key)) {
+                        e.preventDefault();
+                      }
+                    }"
+                  />
                 </div>
 
                 <ion-button expand="block" class="ion-addsec" @click="handleRegister">

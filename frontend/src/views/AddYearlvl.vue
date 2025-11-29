@@ -78,7 +78,28 @@
 
         <div class="form-row">
           <label>Year</label>
-          <ion-input v-model="Yearlvl" required></ion-input>
+          <ion-input
+            v-model="Yearlvl"
+            required
+            maxlength="1"
+            @keydown="(e) => {
+              const allowedKeys = ['Backspace', 'ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown'];
+
+              // Allow navigation keys and backspace
+              if (allowedKeys.includes(e.key)) return;
+
+              // Block space
+              if (e.key === ' ') {
+                e.preventDefault();
+                return;
+              }
+
+              // Allow only numbers 1-4
+              if (!/^[1-4]$/.test(e.key)) {
+                e.preventDefault();
+              }
+            }"
+          />
         </div>
 
 

@@ -133,12 +133,62 @@
               <!-- Body -->
               <div style="padding:15px; background:#D9D9D9;">
                 <label><b>Update Name:</b></label>
-                <input v-model="currentUpdate.name" placeholder="Enter name"
-                  style="width:100%; padding:6px; margin-bottom:8px; border:1px solid #b1b1b2; border-radius:4px; background-color:white; font-size:14px; color:black; margin-top: 5px;" />
+                <input
+                  v-model="currentUpdate.name"
+                  placeholder="Enter name"
+                  style="width:100%; padding:6px; margin-bottom:8px; border:1px solid #b1b1b2; border-radius:4px; background-color:white; font-size:14px; color:black; margin-top: 5px;"
+                  @keydown="(e) => {
+                    const allowedKeys = ['Backspace','Tab','Enter','ArrowLeft','ArrowRight','ArrowUp','ArrowDown','Delete','Home','End'];
+                    const currentValue = currentUpdate.name || '';
+
+                    // Allow navigation keys
+                    if (allowedKeys.includes(e.key)) return;
+
+                    // Prevent space as first character or double spaces
+                    if (e.key === ' ' || e.code === 'Space') {
+                      if (currentValue.length === 0 || currentValue.endsWith(' ')) {
+                        e.preventDefault();
+                      }
+                    }
+                  }"
+                  @paste="(e) => {
+                    e.preventDefault();
+                    const pastedText = e.clipboardData?.getData('text') || '';
+                    // Remove double spaces, trim leading/trailing
+                    const cleaned = pastedText.replace(/\s{2,}/g, ' ').trim();
+                    currentUpdate.name += cleaned;
+                  }"
+                />
+
 
                 <label><b>Short Description:</b></label>
-                <textarea v-model="currentUpdate.description" placeholder="Enter short description"
-                  style="width:100%; padding:6px; border:1px solid #b1b1b2; border-radius:4px; background-color:white; font-size:14px; color:black; min-height:40px; max-height:180px; overflow-y:auto; resize:vertical;margin-top: 5px;"></textarea>
+                <textarea
+                  v-model="currentUpdate.description"
+                  placeholder="Enter short description"
+                  style="width:100%; padding:6px; border:1px solid #b1b1b2; border-radius:4px; background-color:white; font-size:14px; color:black; min-height:40px; max-height:180px; overflow-y:auto; resize:vertical; margin-top:5px;"
+                  @keydown="(e) => {
+                    const allowedKeys = ['Backspace','Tab','Enter','ArrowLeft','ArrowRight','ArrowUp','ArrowDown','Delete','Home','End'];
+                    const currentValue = currentUpdate.description || '';
+
+                    // Allow navigation keys
+                    if (allowedKeys.includes(e.key)) return;
+
+                    // Prevent space as first character or double spaces
+                    if (e.key === ' ' || e.code === 'Space') {
+                      if (currentValue.length === 0 || currentValue.endsWith(' ')) {
+                        e.preventDefault();
+                      }
+                    }
+                  }"
+                  @paste="(e) => {
+                    e.preventDefault();
+                    const pastedText = e.clipboardData?.getData('text') || '';
+                    const cleaned = pastedText.replace(/\s{2,}/g, ' ').trim();
+                    currentUpdate.description += cleaned;
+                  }"
+                ></textarea>
+
+
 
                 <ion-button fill="solid"
                   style="--background: #07055d; --color: #ffff00; font-weight: 700; width: 120px; display: flex; margin: 15px auto; margin-top:12px;"

@@ -143,11 +143,66 @@
                 <div class="modal-body">
                   <ion-item>
                     <ion-label position="floating">Course Code</ion-label>
-                    <ion-input v-model="modalCourseCode" />
+                    <ion-input
+                      v-model="modalCourseCode"
+                      placeholder="Enter course code"
+                      @keydown="(e) => {
+                        const allowedKeys = ['Backspace','Tab','Enter','ArrowLeft','ArrowRight','ArrowUp','ArrowDown','Delete','Home','End'];
+                        if (allowedKeys.includes(e.key)) return;
+
+                        const currentValue = modalCourseCode || '';
+
+                        // Prevent space as first character or double spaces
+                        if (e.key === ' ') {
+                          if (currentValue.length === 0 || currentValue.endsWith(' ')) {
+                            e.preventDefault();
+                          }
+                          return;
+                        }
+
+                        // Block numbers, allow letters and special characters
+                        if (!/^[^0-9]$/.test(e.key)) {
+                          e.preventDefault();
+                        }
+                      }"
+                      @paste="(e) => {
+                        e.preventDefault();
+                        const pastedText = e.clipboardData?.getData('text') || '';
+                        modalCourseCode += pastedText.replace(/[0-9]/g, '').replace(/\s{2,}/g, ' ').trim();
+                      }"
+                    />
                   </ion-item>
                   <ion-item>
                     <ion-label position="floating">Course Name</ion-label>
-                    <ion-input v-model="modalCourseName" />
+                    <ion-input
+                      v-model="modalCourseName"
+                      placeholder="Enter course name"
+                      @keydown="(e) => {
+                        const allowedKeys = ['Backspace','Tab','Enter','ArrowLeft','ArrowRight','ArrowUp','ArrowDown','Delete','Home','End'];
+                        if (allowedKeys.includes(e.key)) return;
+
+                        const currentValue = modalCourseName || '';
+
+                        // Prevent space as first character or double spaces
+                        if (e.key === ' ') {
+                          if (currentValue.length === 0 || currentValue.endsWith(' ')) {
+                            e.preventDefault();
+                          }
+                          return;
+                        }
+
+                        // Block numbers, allow letters and special characters
+                        if (/[0-9]/.test(e.key)) {
+                          e.preventDefault();
+                        }
+                      }"
+                      @paste="(e) => {
+                        e.preventDefault();
+                        const pastedText = e.clipboardData?.getData('text') || '';
+                        modalCourseName += pastedText.replace(/[0-9]/g, '').replace(/\s{2,}/g, ' ').trim();
+                      }"
+                    />
+
                   </ion-item>
                 </div>
                 <div class="modal-footer">

@@ -7,7 +7,8 @@ const pool = mysql.createPool({
   database: process.env.DB_NAME || 'cpc-event',
   waitForConnections: true,
   connectionLimit: 10,
-  queueLimit: 0
+  queueLimit: 0,
+  timezone: '+08:00'
 });
 
 module.exports = pool;
