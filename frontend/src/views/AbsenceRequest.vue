@@ -41,6 +41,7 @@
               <ion-input
                 v-model="reason"
                 placeholder="Enter here"
+                @input="handleReasonInput"
                 @keydown="(e) => {
                   const allowedKeys = [
                     'Backspace','Tab','Enter','ArrowLeft','ArrowRight','ArrowUp','ArrowDown','Delete','Home','End'
@@ -49,17 +50,19 @@
                   // Allow navigation keys
                   if (allowedKeys.includes(e.key)) return;
 
-                  // BLOCK space if input is empty or first character
+                  const currentValue = reason || '';
+
+                  // Handle space - prevent leading space or double space
                   if (e.key === ' ') {
-                    if (!reason || reason.length === 0) {
+                    if (currentValue.length === 0 || currentValue.endsWith(' ')) {
                       e.preventDefault();
                       return;
                     }
-                    return; // allow space only after the first character
+                    return; // allow single space after a letter
                   }
 
-                  // Allow only letters A–Z and a–z
-                  if (!/^[a-zA-Z]$/.test(e.key)) {
+                  // Allow only letters A–Z, a–z, and ñ/Ñ
+                  if (!/^[a-zA-ZñÑ]$/.test(e.key)) {
                     e.preventDefault();
                   }
                 }"
@@ -83,6 +86,7 @@
               <ion-input
                 v-model="parentName"
                 placeholder="Enter here"
+                @input="handleParentNameInput"
                 @keydown="(e) => {
                   const allowedKeys = [
                     'Backspace','Tab','Enter','ArrowLeft','ArrowRight','ArrowUp','ArrowDown','Delete','Home','End'
@@ -91,17 +95,19 @@
                   // Allow navigation keys
                   if (allowedKeys.includes(e.key)) return;
 
-                  // BLOCK space if input is empty or first character
+                  const currentValue = parentName || '';
+
+                  // Handle space - prevent leading space or double space
                   if (e.key === ' ') {
-                    if (!parentName || parentName.length === 0) {
+                    if (currentValue.length === 0 || currentValue.endsWith(' ')) {
                       e.preventDefault();
                       return;
                     }
-                    return; // allow space only after the first character
+                    return; // allow single space after a letter
                   }
 
-                  // Allow only letters A–Z and a–z
-                  if (!/^[a-zA-Z]$/.test(e.key)) {
+                  // Allow only letters A–Z, a–z, and ñ/Ñ
+                  if (!/^[a-zA-ZñÑ]$/.test(e.key)) {
                     e.preventDefault();
                   }
                 }"
@@ -237,6 +243,30 @@ const onFileSelected = (event: Event) => {
     selectedFile.value = files[0];
     selectedFileName.value = files[0].name;
   }
+};
+
+const handleReasonInput = (e: Event) => {
+  const target = e.target as HTMLInputElement;
+  let value = target.value;
+
+  // Remove leading spaces
+  value = value.replace(/^\s+/g, "");
+  // Replace double (or more) spaces with single space
+  value = value.replace(/\s{2,}/g, " ");
+
+  reason.value = value;
+};
+
+const handleParentNameInput = (e: Event) => {
+  const target = e.target as HTMLInputElement;
+  let value = target.value;
+
+  // Remove leading spaces
+  value = value.replace(/^\s+/g, "");
+  // Replace double (or more) spaces with single space
+  value = value.replace(/\s{2,}/g, " ");
+
+  parentName.value = value;
 };
 
 // Submit Form

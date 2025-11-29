@@ -34,24 +34,63 @@
           <ion-item>
             <ion-label position="stacked">First Name:</ion-label>
             <ion-input
-              v-if="isEditing"
-              v-model="tempStudent.first_name"
-              placeholder="First Name"
-              @ionInput="(e) => handleIonInput(e, 'first_name')"
-            ></ion-input>
+                  v-if="isEditing"
+                  v-model="tempStudent.first_name"
+                  @keydown="(e) => {
+                    const allowedKeys = ['Backspace','Tab','Enter','ArrowLeft','ArrowRight','ArrowUp','ArrowDown','Delete','Home','End'];
+                    if (allowedKeys.includes(e.key)) return;
+
+                    const currentValue = tempStudent.first_name || '';
+
+                    // Handle space
+                    if (e.key === ' ') {
+                      // Prevent first character space or double space
+                      if (currentValue.length === 0 || currentValue.endsWith(' ')) {
+                        e.preventDefault();
+                        return;
+                      }
+                      return; // allow single space after a letter
+                    }
+
+                    // Allow letters and ñ/Ñ only
+                    if (!/^[a-zA-ZñÑ]$/.test(e.key)) {
+                      e.preventDefault();
+                    }
+                  }"/>
             <ion-input v-else :value="student.first_name" readonly></ion-input>
           </ion-item>
 
           <ion-item>
             <ion-label position="stacked">Last Name:</ion-label>
             <ion-input
-              v-if="isEditing"
+              v-if="isEditing" 
               v-model="tempStudent.last_name"
-              placeholder="Last Name"
-              @ionInput="(e) => handleIonInput(e, 'last_name')"
-            ></ion-input>
+              placeholder=""
+              @keydown="(e) => {
+                const allowedKeys = ['Backspace','Tab','Enter','ArrowLeft','ArrowRight','ArrowUp','ArrowDown','Delete','Home','End'];
+                if (allowedKeys.includes(e.key)) return;
+
+                const currentValue = tempStudent.last_name || '';
+
+                // Handle space
+                if (e.key === ' ') {
+                  // Prevent first character space or double space
+                  if (currentValue.length === 0 || currentValue.endsWith(' ')) {
+                    e.preventDefault();
+                    return;
+                  }
+                  return; // allow single space after a letter
+                }
+
+                // Allow letters and ñ/Ñ only
+                if (!/^[a-zA-ZñÑ]$/.test(e.key)) {
+                  e.preventDefault();
+                }
+              }"
+            />
             <ion-input v-else :value="student.last_name" readonly></ion-input>
           </ion-item>
+          
           <ion-item>
             <ion-label position="stacked">Course:</ion-label>
             <template v-if="isEditing">
@@ -63,77 +102,122 @@
                 </select>
             </template>
             <ion-input v-else :value="`${getCourseName(student.course_id)}`" readonly></ion-input>
-            </ion-item>
-            <ion-item>
-                <ion-label position="stacked">Yr & Section:</ion-label>
-                <template v-if="isEditing">
-                    <select v-model="tempStudent.year_id" required style="width: 100%; padding: 4px; border-radius: 5px;">
-                    <option disabled value="">Select Year Level</option>
-                    <option v-for="level in yearLevels" :key="level.YearID" :value="level.YearID">
-                        {{ level.YearLvl }}
-                    </option>
-                    </select>
-                    <select v-model="tempStudent.section_id" required style="width: 100%; padding: 4px; border-radius: 5px; margin-top: 10px;">
-                    <option disabled value="">Select Section</option>
-                    <option v-for="sec in sections" :key="sec.section_id" :value="sec.section_id">
-                        {{ sec.section_name }}
-                    </option>
-                    </select>
-                </template>
-                <ion-input
-                    v-else
-                    :value="`${getYearLabel(student.year_id)} - ${getSectionName(student.section_id)}`"
-                    readonly
-                />
-            </ion-item>
+          </ion-item>
+          
           <ion-item>
-            <ion-label position="stacked">Sex:</ion-label>
+            <ion-label position="stacked">Yr & Section:</ion-label>
             <template v-if="isEditing">
-              <select v-model="tempStudent.sex" interface="popover" placeholder="Select Sex" style="border-radius: 5px; padding: 5px; width: 100%;">
+                <select v-model="tempStudent.year_id" required style="width: 100%; padding: 4px; border-radius: 5px;">
+                <option disabled value="">Select Year Level</option>
+                <option v-for="level in yearLevels" :key="level.YearID" :value="level.YearID">
+                    {{ level.YearLvl }}
+                </option>
+                </select>
+                <select v-model="tempStudent.section_id" required style="width: 100%; padding: 4px; border-radius: 5px; margin-top: 10px;">
+                <option disabled value="">Select Section</option>
+                <option v-for="sec in sections" :key="sec.section_id" :value="sec.section_id">
+                    {{ sec.section_name }}
+                </option>
+                </select>
+            </template>
+            <ion-input
+                v-else
+                :value="`${getYearLabel(student.year_id)} - ${getSectionName(student.section_id)}`"
+                readonly
+            />
+          </ion-item>
+          
+          <ion-item>
+            <ion-label position="stacked">Sex: <span style="color: red;">*</span></ion-label>
+            <template v-if="isEditing">
+              <select v-model="tempStudent.sex" required interface="popover" placeholder="Select Sex" style="border-radius: 5px; padding: 5px; width: 100%;">
+                <option disabled value="">Select Sex</option>
                 <option value="Male">Male</option>
                 <option value="Female">Female</option>
               </select>
             </template>
             <ion-input v-else :value="student.sex" readonly></ion-input>
           </ion-item>
-            <ion-item>
-                <ion-label position="stacked">Birth Date:</ion-label>
-                <ion-input
-                    v-if="isEditing"
-                    type="date"
-                    :value="tempStudent.birthday?.split('T')[0]"
-                    @ionInput="e => tempStudent.birthday = e.target.value"
-                    />
-               <ion-input
+          
+          <ion-item>
+            <ion-label position="stacked">Birth Date:</ion-label>
+            <ion-input
+                v-if="isEditing"
+                type="date"
+                :value="tempStudent.birthday?.split('T')[0]"
+                @ionInput="e => tempStudent.birthday = e.target.value"
+            />
+            <ion-input
                 v-else
                 :value="student.birthday?.split('T')[0]"
                 readonly
-                ></ion-input>
-            </ion-item>
+            ></ion-input>
+          </ion-item>
 
-            <ion-item>
-                <ion-label position="stacked">Age:</ion-label>
-                <ion-input :value="calculatedAge" readonly ></ion-input>
-            </ion-item>
+          <ion-item>
+            <ion-label position="stacked">Age:</ion-label>
+            <ion-input :value="calculatedAge" readonly ></ion-input>
+          </ion-item>
+          
           <ion-item>
             <ion-label position="stacked">Email Address:</ion-label>
             <ion-input
+              type="email"
               v-if="isEditing"
               v-model="tempStudent.email"
-              placeholder="Email"
-              @ionInput="(e) => handleIonInput(e, 'email')"
-            ></ion-input>
+              @keydown="(e) => {
+                const allowedKeys = ['Backspace','Tab','Enter','ArrowLeft','ArrowRight','ArrowUp','ArrowDown','Delete','Home','End'];
+                if (allowedKeys.includes(e.key)) return;
+
+                // Prevent any space
+                if (e.key === ' ') {
+                  e.preventDefault();
+                }
+              }"
+              @paste="(e) => {
+                e.preventDefault();
+                const pastedText = e.clipboardData?.getData('text') || '';
+                tempStudent.email = pastedText.replace(/\s/g, '');
+              }" />
             <ion-input v-else :value="student.email" readonly></ion-input>
           </ion-item>
 
           <ion-item>
             <ion-label position="stacked">Contact Number:</ion-label>
             <ion-input
-              v-if="isEditing"
-              v-model="tempStudent.phone"
-              placeholder="Phone"
-              @ionInput="(e) => handleIonInput(e, 'phone')"
-            ></ion-input>
+                v-if="isEditing"
+                v-model="tempStudent.phone"
+                placeholder="Enter here"
+                type="tel"
+                @keydown="(e) => {
+                  const allowedKeys = [
+                    'Backspace','Enter','ArrowLeft','ArrowRight','ArrowUp','ArrowDown','Delete','Home','End'
+                  ];
+
+                  if (allowedKeys.includes(e.key)) return;
+
+                  const currentValue = tempStudent.phone || '';
+
+                  // Prevent typing beyond 11 characters
+                  if (currentValue.length >= 11) {
+                    e.preventDefault();
+                    return;
+                  }
+
+                  // Prevent space as first character or when empty
+                  if (e.key === ' ') {
+                    if (!currentValue || currentValue.length === 0) {
+                      e.preventDefault();
+                      return;
+                    }
+                  }
+
+                  // Allow only digits
+                  if (!/^[0-9]$/.test(e.key)) {
+                    e.preventDefault();
+                  }
+                }"
+            />
             <ion-input v-else :value="student.phone" readonly></ion-input>
           </ion-item>
 
@@ -143,10 +227,10 @@
               v-if="isEditing"
               v-model="tempStudent.address"
               placeholder="Address"
-              @ionInput="(e) => handleIonInput(e, 'address')"
+              @input="handleAddressInput"
             ></ion-input>
             <ion-input v-else :value="student.address" readonly></ion-input>
-           </ion-item>
+          </ion-item>
         </ion-list>
 
         <!-- Save / Cancel buttons -->
@@ -228,10 +312,12 @@ const formattedBirthday = computed(() => {
     day: 'numeric'
   });
 });
+
 const formattedEditDate = computed(() => {
   if (!tempStudent.value.birthday) return '';
   return tempStudent.value.birthday.split('T')[0];
 });
+
 const calculatedAge = computed(() => {
   const birthDate = new Date(student.value.birthday);
   const today = new Date();
@@ -242,6 +328,7 @@ const calculatedAge = computed(() => {
   }
   return age;
 });
+
 const fetchYearLevels = async () => {
   try {
     const res = await axios.get('http://localhost:5000/api/year-level/list');
@@ -259,6 +346,7 @@ const fetchCourses = async () => {
     console.error('Failed to fetch courses:', error);
   }
 };
+
 const fetchSections = async () => {
   try {
     const res = await axios.get('http://localhost:5000/api/sections/list');
@@ -268,10 +356,22 @@ const fetchSections = async () => {
   }
 };
 
+const handleAddressInput = (e: Event) => {
+  const target = e.target as HTMLInputElement;
+  let value = target.value;
+
+  // Remove leading spaces
+  value = value.replace(/^\s+/g, "");
+  // Replace double (or more) spaces with single space
+  value = value.replace(/\s{2,}/g, " ");
+
+  tempStudent.value.address = value;
+};
+
 const startEditing = () => {
   tempStudent.value = {
     ...student.value,
-    sex: student.value.sex || 'Male'
+    sex: student.value.sex || ''
   };
   isEditing.value = true;
 };
@@ -279,6 +379,7 @@ const startEditing = () => {
 const cancelEditing = () => {
   isEditing.value = false;
 };
+
 const getYearLabel = (id: number | string) => {
   const found = yearLevels.value.find((lvl) => lvl.YearID == id);
   return found ? found.YearLvl : '';
@@ -288,11 +389,27 @@ const getSectionName = (id: number | string) => {
   const found = sections.value.find((sec) => sec.section_id == id);
   return found ? found.section_name : '';
 };
+
 const getCourseName = (id: number | string) => {
   const found = courses.value.find((crs) => crs.course_id == id);
   return found ? found.course_code : '';
 };
+
 const saveChanges = async () => {
+  // Validate required field
+  if (!tempStudent.value.sex) {
+    Swal.fire({
+      icon: 'warning',
+      title: 'Required Field',
+      text: 'Please select a sex.',
+      didOpen: () => {
+        document.body.classList.remove('swal2-height-auto');
+        document.documentElement.classList.remove('swal2-height-auto');
+      }
+    });
+    return;
+  }
+
   try {
     const payload = { ...tempStudent.value };
 
@@ -336,6 +453,7 @@ const saveChanges = async () => {
     });
   }
 };
+
 onMounted(async () => {
   try {
     const res = await axios.get('http://localhost:5000/api/protected', {
@@ -350,41 +468,7 @@ onMounted(async () => {
   await fetchSections();
   await fetchYearLevels();
 });
-
-const handleIonInput = (e: any, field: string) => {
-  let value: string = e.detail.value || "";
-
-  // Remove leading spaces
-  value = value.replace(/^\s+/g, "");
-
-  switch (field) {
-    case "first_name":
-    case "last_name":
-      // Only letters and spaces, remove double spaces
-      value = value.replace(/[^A-Za-z\s]/g, "").replace(/\s{2,}/g, " ");
-      break;
-
-    case "phone":
-      // Only numbers, max 11 characters, no spaces
-      value = value.replace(/[^0-9]/g, "").slice(0, 11);
-      break;
-
-    case "email":
-      // Allow all characters except spaces
-      value = value.replace(/\s/g, "");
-      break;
-
-    case "address":
-      // Allow all characters, remove double spaces
-      value = value.replace(/\s{2,}/g, " ");
-      break;
-  }
-
-  tempStudent[field] = value;
-};
-
 </script>
-
 
 <style scoped>
 .ion-page {

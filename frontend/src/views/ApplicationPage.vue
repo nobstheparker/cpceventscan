@@ -50,25 +50,15 @@
             </div>
           </ion-radio-group>
 
-          <!-- Motivation Other input
+          <!-- Motivation Other input -->
           <ion-item v-if="motivation === 'Other'">
             <ion-label position="stacked">If other, elaborate your interest below.</ion-label>
             <ion-input
               v-model="motivationOther"
               placeholder="Enter here"
-              @keydown="(e) => handleInputKeydown(e, motivationOther)"
-              @paste="(e) => handleInputPaste(e, motivationOther)"
-            />
-          </ion-item> -->
-
-                    <!-- Motivation Other input -->
-          <ion-item v-if="motivation === 'Other'">
-            <ion-label position="stacked">If other, elaborate your interest below.</ion-label>
-            <ion-input
-              v-model="motivationOther"
-              placeholder="Enter here"
-              @keydown="handleInputKeydown"
-              @paste="handleInputPaste"
+              @input="handleOtherInput"
+              @keydown="handleOtherKeydown"
+              @paste="handleOtherPaste"
             />
           </ion-item>
 
@@ -93,8 +83,9 @@
             <ion-input
               v-model="volunteerRole"
               placeholder="Enter here"
-              @keydown="handleInputKeydown"
-              @paste="handleInputPaste"
+              @input="handleOtherInput"
+              @keydown="handleOtherKeydown"
+              @paste="handleOtherPaste"
             />
           </ion-item>
 
@@ -127,8 +118,9 @@
             <ion-input
               v-model="skillsOther"
               placeholder="Enter here"
-              @keydown="handleInputKeydown"
-              @paste="handleInputPaste"
+              @input="handleOtherInput"
+              @keydown="handleOtherKeydown"
+              @paste="handleOtherPaste"
             />
           </ion-item>
 
@@ -176,8 +168,9 @@
           <ion-input
             v-model="teamOther"
             placeholder="Enter here"
-            @keydown="handleInputKeydown"
-            @paste="handleInputPaste"
+            @input="handleOtherInput"
+            @keydown="handleOtherKeydown"
+            @paste="handleOtherPaste"
           />
         </ion-item>
 
@@ -270,149 +263,14 @@ const team_preference = ref('');
 const teamOther = ref('');
 const agreementChecked = ref(false);
 
-
-// const submitForm = async () => {
-//   // Check agreement first
-//   if (!agreementChecked.value) {
-//     Swal.fire({
-//       icon: 'warning',
-//       title: 'Agreement Required',
-//       text: 'You must agree to the volunteer commitment note to proceed.',
-//       didOpen: () => {
-//         document.body.classList.remove('swal2-height-auto');
-//         document.documentElement.classList.remove('swal2-height-auto');
-//       }
-//     });
-//     return;
-//   }
-
-//   // Check all main radio groups at once
-//   if (!motivation.value || !volunteeredBefore.value || !skills.value || !available.value || !team_preference.value) {
-//     Swal.fire({
-//       icon: 'warning',
-//       title: 'Missing Field(s)',
-//       text: 'Please answer all the required radio button questions before submitting.',
-//       didOpen: () => {
-//         document.body.classList.remove('swal2-height-auto');
-//         document.documentElement.classList.remove('swal2-height-auto');
-//       }
-//     });
-//     return;
-//   }
-
-//   // Merge all conditional text inputs into one check
-//   const missingConditionalFields =
-//     (motivation.value === 'Other' && (!motivationOther.value || motivationOther.value.trim() === '')) ||
-//     (volunteeredBefore.value === 'Yes' && (!volunteerRole.value || volunteerRole.value.trim() === '')) ||
-//     (skills.value === 'Other' && (!skillsOther.value || skillsOther.value.trim() === '')) ||
-//     (team_preference.value === 'Other' && (!teamOther.value || teamOther.value.trim() === ''));
-
-//   if (missingConditionalFields) {
-//     Swal.fire({
-//       icon: 'warning',
-//       title: 'Missing Field(s)',
-//       text: 'Please fill out all the additional details for "Other" or "Yes" selections before submitting.',
-//       didOpen: () => {
-//         document.body.classList.remove('swal2-height-auto');
-//         document.documentElement.classList.remove('swal2-height-auto');
-//       }
-//     });
-//     return;
-//   }
-
-//   // All validations passed
-//   console.log('Form is valid. Submitting...');
-//   // Add your submission logic here
-// };
-
-// // Reusable keydown handler
-// const handleTextInputKeydown = (e: KeyboardEvent, modelRef: typeof motivationOther) => {
-//   const allowedKeys = ['Backspace', 'ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown'];
-
-//   // Allow navigation and backspace
-//   if (allowedKeys.includes(e.key)) return;
-
-//   // Prevent space as first character, when empty, or double space
-//   if (e.key === ' ') {
-//     if (!modelRef.value || modelRef.value.length === 0) {
-//       e.preventDefault();
-//       return;
-//     }
-//     if (modelRef.value.slice(-1) === ' ') {
-//       e.preventDefault();
-//       return;
-//     }
-//     return; // allow single space after first character
-//   }
-
-//   // Allow letters and numbers only
-//   if (!/^[a-zA-Z0-9]$/.test(e.key)) {
-//     e.preventDefault();
-//   }
-// }
-
-//   const payload = {
-//     event_id: eventId.value,   
-//     role: role.value,
-//     motivation: motivation.value,
-//     motivationOther: motivationOther.value,
-//     volunteeredBefore: volunteeredBefore.value,
-//     pastRole: volunteerRole.value,
-//     skills: skills.value,
-//     skillsOther: skillsOther.value,
-//     available: available.value,
-//     team_preference: team_preference.value,
-//     teamOther: teamOther.value,
-//     agreement: agreementChecked.value ? 1 : 0
-//   };
-
-//   try {
-//     const response = await axios.post('http://localhost:5000/api/volunteers/apply', payload, {
-//       withCredentials: true
-//     });
-
-//     Swal.fire({
-//       icon: 'success',
-//       title: 'Submitted',
-//       text: response.data.message || 'Application submitted successfully!',
-//       didOpen: () => {
-//         document.body.classList.remove('swal2-height-auto');
-//         document.documentElement.classList.remove('swal2-height-auto');
-//       }
-//     }).then(() => {
-//       role.value = '';
-//       motivation.value = '';
-//       motivationOther.value = '';
-//       volunteeredBefore.value = '';
-//       volunteerRole.value = '';
-//       skills.value = '';
-//       skillsOther.value = '';
-//       available.value = '';
-//       team_preference.value = '';
-//       teamOther.value = '';
-//       agreementChecked.value = false;
-//     });
-//   } catch (error) {
-//     Swal.fire({
-//       icon: 'error',
-//       title: 'Error',
-//       text: error.response?.data?.message || 'Failed to submit application',
-//       didOpen: () => {
-//         document.body.classList.remove('swal2-height-auto');
-//         document.documentElement.classList.remove('swal2-height-auto');
-//       }
-//     });
-//   }
-
-// Unified input validation handler - prevents double spaces and invalid characters
-// Input validation handler - prevents double spaces and invalid characters
-const handleInputKeydown = (e: any) => {
-  const allowedKeys = ['Backspace', 'Delete', 'ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', 'Tab'];
+// Handler for "Other" input fields - NO NUMBERS, prevent double spaces
+const handleOtherKeydown = (e: any) => {
+  const allowedKeys = ['Backspace', 'Delete', 'ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', 'Tab', 'Enter'];
 
   // Allow navigation keys
   if (allowedKeys.includes(e.key)) return;
 
-  // Get current value from the actual input element
+  // Get current value from the input element
   const input = e.target.closest('ion-input');
   if (!input) return;
   
@@ -434,19 +292,40 @@ const handleInputKeydown = (e: any) => {
     return;
   }
 
-  // Allow only letters, numbers, and common punctuation
-  if (!/^[a-zA-Z0-9.,!?;:()\-']$/.test(e.key)) {
+  // Allow only letters and common punctuation - NO NUMBERS
+  if (!/^[a-zA-ZñÑ.,!?;:()\-']$/.test(e.key)) {
     e.preventDefault();
   }
 };
 
-// Paste handler to prevent double spaces in pasted content
-const handleInputPaste = (e: any) => {
+// Input handler to clean up double spaces
+const handleOtherInput = (e: Event) => {
+  const target = e.target as HTMLInputElement;
+  let value = target.value;
+
+  // Remove leading spaces
+  value = value.replace(/^\s+/g, "");
+  // Replace double (or more) spaces with single space
+  value = value.replace(/\s{2,}/g, " ");
+
+  // Update the appropriate model based on which field triggered the event
+  const input = e.target as any;
+  const ionInput = input.closest('ion-input');
+  if (ionInput) {
+    ionInput.value = value;
+  }
+};
+
+// Paste handler to prevent numbers and double spaces in pasted content
+const handleOtherPaste = (e: any) => {
   e.preventDefault();
   const pastedText = e.clipboardData?.getData('text') || '';
   
-  // Clean the pasted text: remove multiple spaces and trim
-  const cleanedText = pastedText.replace(/\s{2,}/g, ' ').trim();
+  // Remove numbers and clean the pasted text: remove multiple spaces and trim
+  const cleanedText = pastedText
+    .replace(/[0-9]/g, '') // Remove all numbers
+    .replace(/\s{2,}/g, ' ') // Replace multiple spaces with single space
+    .trim();
   
   // Get the ion-input element
   const input = e.target.closest('ion-input');

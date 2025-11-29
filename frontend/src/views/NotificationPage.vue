@@ -47,7 +47,6 @@
         <ion-icon name="home" @click="goTo('/')"></ion-icon>
         <ion-icon name="calendar" @click="goTo('/calendar-page')"></ion-icon>
         <ion-icon name="scan" @click="goTo('/scanner')"></ion-icon>
-        <ion-icon name="notifications" @click="goTo('/notifications')"></ion-icon>
         <div class="notif-icon-wrapper">
           <ion-icon name="notifications" @click="goTo('/notifications')" class="active"></ion-icon>
           <span v-if="unreadCount > 0" class="badge-footer">{{ unreadCount }}</span>

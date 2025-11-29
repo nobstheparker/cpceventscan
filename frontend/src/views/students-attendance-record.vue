@@ -12,7 +12,6 @@
       <div id="container">
         <h1>ATTENDANCE RECORDS</h1>
 
-
         <!-- ✅ Attendance Summary -->
         <div class="attendance-summary">
           <div class="summary-item">
@@ -59,7 +58,7 @@
                     <span
                       class="status-chip"
                       :class="{
-                        cleared: row.status === 'Cleared',
+                        settled: row.status === 'Settled',
                         unsettled: row.status === 'Unsettled',
                       }"
                     >
@@ -135,7 +134,6 @@ const initDataTable = () => {
   });
 };
 
-
 // ✅ Fetch attendance
 onMounted(async () => {
   try {
@@ -150,41 +148,32 @@ onMounted(async () => {
 
     eventLogs.value = response.data.map((r) => {
       let remarks = r.remarks || "";
-      let status = r.status ? "Cleared" : "Unsettled";
+      let status = r.status; // Use the status directly from backend (Settled or Unsettled)
 
-      // ✅ Map status based on your SQL query result
-      
       const now = new Date();
-
-      // Parse event date
       const eventDate = r.date ? new Date(r.date) : null;
-
-      // Consider event ended if today is after the event date
       const eventEnded = eventDate ? now > eventDate : false;
 
       if (r.timeIn && r.timeOut) {
-        // ✅ Fully attended
+        // Fully attended
         remarks = "Present";
-        // Don't override status - backend already calculated it
         attended++;
-      } 
-      else if (r.timeIn || r.timeOut) {
-        // ✅ Partial attendance
+      } else if (r.timeIn || r.timeOut) {
+        // Partial attendance
         remarks = "Incomplete";
-        // Don't override status - backend already calculated it
         attended++;
-
         if (eventEnded) {
           missedInOut++;
         }
-      } 
-      else if (!r.timeIn && !r.timeOut) {
-        // ❌ Absent
-        remarks = "Absent";
-        // Don't override status - backend already calculated it
-        
-        if (eventEnded) {
-          missed++;
+      } else if (!r.timeIn && !r.timeOut) {
+        // No attendance recorded
+        if (status === "Settled") {
+          remarks = "Excused"; // Assuming Settled means excused absence
+        } else if (status === "Unsettled") {
+          remarks = "Absent";
+          if (eventEnded) {
+            missed++;
+          }
         }
       }
 
@@ -198,8 +187,6 @@ onMounted(async () => {
     console.error("Error fetching attendance:", err);
   }
 });
-
-
 
 watch(eventLogs, (newVal) => {
   if (newVal.length > 0) {
@@ -284,12 +271,12 @@ h3 {
 }
 
 .styled-table td span.status-chip {
-  padding: 6px 10px;
+  padding: 0px 10px;
   border-radius: 5px;
   font-weight: 700;
 }
 
-.styled-table .cleared {
+.styled-table .settled {
   color: #0e7a3b;
   background: #e8f7ef;
   border: 1px solid #b9e6cd;

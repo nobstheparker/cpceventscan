@@ -410,7 +410,7 @@ const handleAction = async (action) => {
       console.log("📏 Calculated Distance (meters):", distance);
 
       // ⚙️ Set allowed radius
-      const allowedRadius = 700;
+      const allowedRadius = 70000;
 
       if (distance > allowedRadius) {
         const diff = Math.round(distance - allowedRadius); // how far beyond the limit

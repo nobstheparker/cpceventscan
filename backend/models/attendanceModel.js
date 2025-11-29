@@ -86,19 +86,54 @@ function getBystudEvent(event_id, student_id) {
   return db.execute(sql, [student_id, event_id]);
 }
 
-
 function getByStudent(student_id) {
   return db.execute(
-    `SELECT ea.attendance_id, e.event_name AS eventName, DATE_FORMAT(e.start_date_time, '%b %d, %Y') AS date,
-            ea.time_in AS timeIn, ea.time_out AS timeOut, ea.remarks,
-            CASE ea.status
-                WHEN 1 THEN 'cleared'
-                ELSE 'unsettled'
-            END AS status
-     FROM event_attendance ea
-     JOIN events e ON ea.id = e.id
-     WHERE ea.student_id = ?`,
-    [student_id]
+    `SELECT
+    e.id AS event_id,
+    e.event_name AS eventName,
+    DATE_FORMAT(e.start_date_time, '%b %d, %Y') AS date,
+
+    ea.attendance_id,
+    ea.time_in AS timeIn,
+    ea.time_out AS timeOut,
+    ea.remarks,
+
+    -- FINAL STATUS LOGIC (Revised: Prioritize ea.status over time_in presence)
+    CASE
+        WHEN sr.status = 1 THEN 'Settled'                   -- approved absence
+        WHEN ea.status = 1 THEN 'Settled'                   -- settled in attendance table (prioritized)
+        WHEN ea.status = 0 THEN 'Unsettled'                 -- unsettled in attendance table
+        WHEN ea.time_in IS NOT NULL THEN 'Unsettled'        -- they attended but status not set → unsettled
+        ELSE 'Absent'
+    END AS status,
+
+    sr.request_id,
+    sr.absence_requests_id,
+
+    -- Absence request status
+    CASE sr.status
+        WHEN 1 THEN 'approved'
+        WHEN 2 THEN 'rejected'
+        WHEN 0 THEN 'pending'
+        ELSE 'no request'
+    END AS requestStatus
+
+FROM events e
+
+LEFT JOIN event_attendance ea
+    ON ea.id = e.id
+    AND ea.student_id = ?
+
+LEFT JOIN student_request sr
+    ON sr.id = e.id
+    AND sr.student_id = ?
+
+-- Only show events with attendance or request
+WHERE ea.attendance_id IS NOT NULL
+   OR sr.request_id IS NOT NULL
+
+ORDER BY e.start_date_time DESC;;`,
+    [student_id,student_id]
   );
 }
 
@@ -370,8 +405,8 @@ FROM (
     LEFT JOIN student_request sr ON ar.student_id = sr.student_id AND sr.id = ar.id
     WHERE ar.id = ?
 ) AS combined
-GROUP BY student_id;
-
+GROUP BY student_id
+;
 `,
     [event_id, event_id]
   );
@@ -382,7 +417,6 @@ function settleAttendance(attendance_id) {
     [attendance_id]
   );
 }
-
 function getAllAttendanceControls() {
   return db.execute(
     `SELECT 
@@ -476,8 +510,6 @@ function updateAfternoonTriviaMissed(attendanceId) {
   );
 }
 
-
-
 module.exports = {
   createAttendance,
   updateTimeIn,
@@ -496,5 +528,5 @@ module.exports = {
   updateAfternoonTimeOut,
   getAttendanceControlsByEvent,
   updateMorningTriviaMissed,
-  updateAfternoonTriviaMissed,
+  updateAfternoonTriviaMissed
 };

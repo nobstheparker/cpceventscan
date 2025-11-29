@@ -226,6 +226,8 @@ ion-content {
 .form-container {
   background: #08055e;
   border-radius: 5px;
+  padding-bottom: 50px;
+  display: block;
   width: 100%;
 }
 ion-grid {
